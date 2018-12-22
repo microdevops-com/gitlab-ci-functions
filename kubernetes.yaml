@@ -1,4 +1,5 @@
-.kubernetes_functions: &kubernetes_functions |
-  function registry_login() {
-    docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
-  }
+.kubernetes_functions:
+  script: |
+    function registry_login() {
+      docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
+    }
