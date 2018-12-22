@@ -1,6 +1,9 @@
 #!/bin/bash
 
 export DOCKER="docker --config=./docker-config"
+export CI_JOB_TOKEN
+export CI_REGISTRY_USER
+export CI_REGISTRY
 
 function registry_login {
 	# make docker config per workspace (instead of gitlab-runner home)
