@@ -22,7 +22,7 @@ function rancher_login {
 }
 
 function rancher_lock {
-	mkdir $RANCHER_DIR
+	mkdir -p $RANCHER_DIR
 	until mkdir "$RANCHER_LOCK_DIR" || (( RANCHER_LOCK_RETRIES == RANCHER_LOCK_RETRIES_MAX ))
 	do
 		echo "NOTICE: Acquiring lock failed on $RANCHER_LOCK_DIR, sleeping for ${RANCHER_LOCK_SLEEP_TIME}s"
