@@ -51,5 +51,5 @@ function rancher_namespace {
 }
 
 function namespace_secret_to_project_registry {
-	$KUBECTL create secret docker-registry docker-registry-${CI_PROJECT_PATH_SLUG} --docker-server=${CI_REGISTRY} --docker-username=${CI_DEPLOY_USER} --docker-password=${CI_DEPLOY_PASSWORD} --docker-email=${ADMIN_EMAIL} -n $KUBE_NAMESPACE
+	$KUBECTL -n $KUBE_NAMESPACE describe secret docker-registry-${CI_PROJECT_PATH_SLUG} || $KUBECTL -n $KUBE_NAMESPACE create secret docker-registry docker-registry-${CI_PROJECT_PATH_SLUG} --docker-server=${CI_REGISTRY} --docker-username=${CI_DEPLOY_USER} --docker-password=${CI_DEPLOY_PASSWORD} --docker-email=${ADMIN_EMAIL}
 }
