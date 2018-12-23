@@ -7,6 +7,7 @@ RANCHER_LOCK_DIR="$HOME/.rancher/.lock"
 RANCHER_LOCK_RETRIES=1
 RANCHER_LOCK_RETRIES_MAX=60
 RANCHER_LOCK_SLEEP_TIME=5
+HELM="helm --kubeconfig ./.helm/cluster.yml --home ./.helm"
 
 function registry_login {
 	docker login -u "$CI_REGISTRY_USER" -p "$CI_JOB_TOKEN" "$CI_REGISTRY"
@@ -49,10 +50,41 @@ function rancher_namespace {
 	$RANCHER namespace | grep -q "$KUBE_NAMESPACE\s*$KUBE_NAMESPACE" || $RANCHER namespace create "$KUBE_NAMESPACE"
 }
 
+# FIXME to dry-run -> update
 function namespace_secret_project_registry {
 	$KUBECTL -n $KUBE_NAMESPACE describe secret docker-registry-${CI_PROJECT_PATH_SLUG} || $KUBECTL -n $KUBE_NAMESPACE create secret docker-registry docker-registry-${CI_PROJECT_PATH_SLUG} --docker-server=${CI_REGISTRY} --docker-username=${CI_DEPLOY_USER} --docker-password=${CI_DEPLOY_PASSWORD} --docker-email=${ADMIN_EMAIL}
 }
 
 function namespace_secret_rabbitmq () {
 	$KUBECTL -n $KUBE_NAMESPACE describe secret $1 || $KUBECTL -n $KUBE_NAMESPACE create secret generic $1 --from-literal=RABBITMQ_HOST="$RABBITMQ_HOST" --from-literal=RABBITMQ_PORT="$RABBITMQ_PORT" --from-literal=RABBITMQ_USER="$RABBITMQ_USER" --from-literal=RABBITMQ_PASS="$RABBITMQ_PASS" --from-literal=RABBITMQ_VHOST="$RABBITMQ_VHOST"
+}
+
+function helm_cluster_login {
+	mkdir -p ./.helm
+	cat <<- EOF > ./.helm/cluster.yml
+	apiVersion: v1
+	kind: Config
+	clusters:
+	- name: "remote-cluster"
+	  cluster:
+	    server: "$KUBE_SERVER"
+	    api-version: v1
+
+	users:
+	- name: "user-gvnrn"
+	  user:
+	    token: "$KUBE_TOKEN"
+
+	contexts:
+	- name: "remote-cluster"
+	  context:
+	    user: "user-gvnrn"
+	    cluster: "remote-cluster"
+
+	current-context: "remote-cluster"	
+	EOF
+}
+
+function helm_cluster_logout {
+	rm -rf ./.helm
 }
