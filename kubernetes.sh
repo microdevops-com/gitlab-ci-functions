@@ -34,6 +34,10 @@ function rancher_lock {
 		exit 1
 	else
 		echo "NOTICE: Successfully acquired lock on $RANCHER_LOCK_DIR"
-		trap 'rm -rf "$RANCHER_LOCK_DIR"' 0
 	fi	
+}
+
+function rancher_unlock {
+	rm -rf "$RANCHER_LOCK_DIR"
+	echo "NOTICE: Successfully removed lock on $RANCHER_LOCK_DIR"
 }
