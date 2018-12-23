@@ -50,13 +50,16 @@ function rancher_namespace {
 	$RANCHER namespace | grep -q "$KUBE_NAMESPACE\s*$KUBE_NAMESPACE" || $RANCHER namespace create "$KUBE_NAMESPACE"
 }
 
-# FIXME to dry-run -> update
 function namespace_secret_project_registry {
-	$KUBECTL -n $KUBE_NAMESPACE describe secret docker-registry-${CI_PROJECT_PATH_SLUG} || $KUBECTL -n $KUBE_NAMESPACE create secret docker-registry docker-registry-${CI_PROJECT_PATH_SLUG} --docker-server=${CI_REGISTRY} --docker-username=${CI_DEPLOY_USER} --docker-password=${CI_DEPLOY_PASSWORD} --docker-email=${ADMIN_EMAIL}
+	$KUBECTL -n $KUBE_NAMESPACE create secret docker-registry docker-registry-${CI_PROJECT_PATH_SLUG} \
+		--docker-server=${CI_REGISTRY} --docker-username=${CI_DEPLOY_USER} --docker-password=${CI_DEPLOY_PASSWORD} --docker-email=${ADMIN_EMAIL} \
+		-o yaml --dry-run | $KUBECTL -n $KUBE_NAMESPACE replace --force -f -
 }
 
 function namespace_secret_rabbitmq () {
-	$KUBECTL -n $KUBE_NAMESPACE describe secret $1 || $KUBECTL -n $KUBE_NAMESPACE create secret generic $1 --from-literal=RABBITMQ_HOST="$RABBITMQ_HOST" --from-literal=RABBITMQ_PORT="$RABBITMQ_PORT" --from-literal=RABBITMQ_USER="$RABBITMQ_USER" --from-literal=RABBITMQ_PASS="$RABBITMQ_PASS" --from-literal=RABBITMQ_VHOST="$RABBITMQ_VHOST"
+	$KUBECTL -n $KUBE_NAMESPACE create secret generic $1 \
+		--from-literal=RABBITMQ_HOST="$RABBITMQ_HOST" --from-literal=RABBITMQ_PORT="$RABBITMQ_PORT" --from-literal=RABBITMQ_USER="$RABBITMQ_USER" --from-literal=RABBITMQ_PASS="$RABBITMQ_PASS" --from-literal=RABBITMQ_VHOST="$RABBITMQ_VHOST" \
+		-o yaml --dry-run | $KUBECTL -n $KUBE_NAMESPACE replace --force -f -
 }
 
 function helm_cluster_login {
@@ -87,4 +90,17 @@ function helm_cluster_login {
 
 function helm_cluster_logout {
 	rm -f ./.helm/cluster.yml
+}
+
+function helm_init_namespace {
+	$KUBECTL -n $KUBE_NAMESPACE create serviceaccount tiller \
+		-o yaml --dry-run | $KUBECTL -n $KUBE_NAMESPACE replace --force -f -
+	$KUBECTL -n $KUBE_NAMESPACE create rolebinding tiller-namespace-admin --clusterrole=admin --serviceaccount=tc-deploy:tiller \
+		-o yaml --dry-run | $KUBECTL -n $KUBE_NAMESPACE replace --force -f -
+	$HELM init --upgrade --tiller-namespace $KUBE_NAMESPACE --service-account tiller
+	until $KUBECTL -n $KUBE_NAMESPACE rollout status deploy/tiller-deploy | grep -q "successfully rolled out"; do echo .; done
+}
+
+function helm_deploy () {
+	$HELM upgrade --tiller-namespace $KUBE_NAMESPACE --namespace $KUBE_NAMESPACE --recreate-pods --install $1 --set image.tag=$2 .helm/$1
 }
