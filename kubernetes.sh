@@ -21,6 +21,7 @@ function rancher_login {
 	$RANCHER login "$KUBE_SERVER" --token "$KUBE_TOKEN"
 }
 
+# Rancher CLI is not concurrant, lock usage
 function rancher_lock {
 	mkdir -p $RANCHER_DIR
 	until mkdir "$RANCHER_LOCK_DIR" || (( RANCHER_LOCK_RETRIES == RANCHER_LOCK_RETRIES_MAX ))
@@ -88,6 +89,7 @@ function helm_cluster_login {
 	EOF
 }
 
+# We shouldn't leave credentials in the workspace as they may change
 function helm_cluster_logout {
 	rm -f ./.helm/cluster.yml
 }
