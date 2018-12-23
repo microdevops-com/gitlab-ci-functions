@@ -18,6 +18,7 @@ function kubectl_namespace {
 }
 
 function rancher_login {
+	mkdir -p $RANCHER_DIR
 	$RANCHER login "$KUBE_SERVER" --token "$KUBE_TOKEN"
 }
 
@@ -44,7 +45,7 @@ function rancher_unlock {
 }
 
 function rancher_logout {
-	rm -rf $RANCHER_DIR
+	rm -f $RANCHER_DIR/*
 }
 
 function rancher_namespace {
