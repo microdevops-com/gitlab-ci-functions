@@ -25,7 +25,7 @@ after_script:
 
 ...
 
-prepare_rabbit_vhost:
+prepare_rabbitmq_vhost:
   stage: prerequisites
   script:
     - . ./rabbitmq.sh
