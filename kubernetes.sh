@@ -18,7 +18,7 @@ function ensure_namespace {
 }
 
 function rancher_login {
-	rancher login "$KUBE_SERVER" --token "$KUBE_TOKEN"
+	$RANCHER login "$KUBE_SERVER" --token "$KUBE_TOKEN"
 }
 
 function rancher_lock {
@@ -44,4 +44,8 @@ function rancher_unlock {
 
 function rancher_logout {
 	rm -rf $RANCHER_DIR
+}
+
+function rancher_ensure_namespace {
+	$RANCHER namespace | grep -q "$KUBE_NAMESPACE\s*$KUBE_NAMESPACE" || $RANCHER namespace create "$KUBE_NAMESPACE"
 }
