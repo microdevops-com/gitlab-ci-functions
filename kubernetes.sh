@@ -3,6 +3,7 @@
 KUBE_NAMESPACE=$(echo $KUBE_NAMESPACE| tr "[:upper:]" "[:lower:]" | sed "s/[^a-zA-Z0-9-]/-/g")
 KUBECTL="kubectl --server=$KUBE_SERVER --token=$KUBE_TOKEN"
 RANCHER="rancher"
+RANCHER_DIR="$HOME/.rancher"
 RANCHER_LOCK_DIR="$HOME/.rancher/.lock"
 RANCHER_LOCK_RETRIES=1
 RANCHER_LOCK_RETRIES_MAX=60
@@ -21,6 +22,7 @@ function rancher_login {
 }
 
 function rancher_lock {
+	mkdir $RANCHER_DIR
 	until mkdir "$RANCHER_LOCK_DIR" || (( RANCHER_LOCK_RETRIES == RANCHER_LOCK_RETRIES_MAX ))
 	do
 		echo "NOTICE: Acquiring lock failed on $RANCHER_LOCK_DIR, sleeping for ${RANCHER_LOCK_SLEEP_TIME}s"
