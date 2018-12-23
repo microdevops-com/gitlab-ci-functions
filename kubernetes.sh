@@ -86,5 +86,5 @@ function helm_cluster_login {
 }
 
 function helm_cluster_logout {
-	rm -rf ./.helm
+	rm -f ./.helm/cluster.yml
 }
