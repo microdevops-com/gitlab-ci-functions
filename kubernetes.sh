@@ -100,7 +100,7 @@ function helm_init_namespace {
 		$KUBECTL -n $KUBE_NAMESPACE delete deployment tiller-deploy || true
 		$KUBECTL -n $KUBE_NAMESPACE create serviceaccount tiller \
 			-o yaml --dry-run | $KUBECTL -n $KUBE_NAMESPACE replace --force -f -
-		$KUBECTL -n $KUBE_NAMESPACE create rolebinding tiller-namespace-admin --clusterrole=admin --serviceaccount=tc-deploy:tiller \
+		$KUBECTL -n $KUBE_NAMESPACE create rolebinding tiller-namespace-admin --clusterrole=admin --serviceaccount=${KUBE_NAMESPACE}:tiller \
 			-o yaml --dry-run | $KUBECTL -n $KUBE_NAMESPACE replace --force -f -
 		$HELM init --upgrade --tiller-namespace $KUBE_NAMESPACE --service-account tiller
 		until $KUBECTL -n $KUBE_NAMESPACE rollout status deploy/tiller-deploy | grep -q "successfully rolled out"; do echo .; done
