@@ -13,7 +13,7 @@ function registry_login {
 	docker login -u "$CI_REGISTRY_USER" -p "$CI_JOB_TOKEN" "$CI_REGISTRY"
 }
 
-function ensure_namespace {
+function kubectl_namespace {
 	$KUBECTL describe namespace "$KUBE_NAMESPACE" || $KUBECTL create namespace "$KUBE_NAMESPACE"
 }
 
@@ -46,6 +46,10 @@ function rancher_logout {
 	rm -rf $RANCHER_DIR
 }
 
-function rancher_ensure_namespace {
+function rancher_namespace {
 	$RANCHER namespace | grep -q "$KUBE_NAMESPACE\s*$KUBE_NAMESPACE" || $RANCHER namespace create "$KUBE_NAMESPACE"
+}
+
+function namespace_secret_to_project_registry {
+	$KUBECTL create secret docker-registry docker-registry-${CI_PROJECT_PATH_SLUG} --docker-server=${CI_REGISTRY} --docker-username=${CI_DEPLOY_USER} --docker-password=${CI_DEPLOY_PASSWORD} --docker-email=${ADMIN_EMAIL} -n $KUBE_NAMESPACE
 }
