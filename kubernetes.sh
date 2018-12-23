@@ -33,7 +33,7 @@ function rancher_lock {
 		echo "ERROR: Cannot acquire lock after ${RANCHER_LOCK_RETRIES} retries, giving up on $RANCHER_LOCK_DIR"
 		exit 1
 	else
-		"NOTICE: Successfully acquired lock on $RANCHER_LOCK_DIR"
+		echo "NOTICE: Successfully acquired lock on $RANCHER_LOCK_DIR"
 		trap 'rm -rf "$RANCHER_LOCK_DIR"' 0
 	fi	
 }
