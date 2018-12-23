@@ -97,7 +97,7 @@ function helm_cluster_logout {
 
 function helm_init_namespace {
 	if ! $HELM ls --namespace $KUBE_NAMESPACE --tiller-namespace $KUBE_NAMESPACE; then
-		$KUBECTL -n $KUBE_NAMESPACE delete deployment tiller-deploy
+		$KUBECTL -n $KUBE_NAMESPACE delete deployment tiller-deploy || true
 		$KUBECTL -n $KUBE_NAMESPACE create serviceaccount tiller \
 			-o yaml --dry-run | $KUBECTL -n $KUBE_NAMESPACE replace --force -f -
 		$KUBECTL -n $KUBE_NAMESPACE create rolebinding tiller-namespace-admin --clusterrole=admin --serviceaccount=tc-deploy:tiller \
