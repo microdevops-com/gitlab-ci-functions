@@ -1,6 +1,5 @@
 #!/bin/bash
 
-KUBE_NAMESPACE=$(echo $KUBE_NAMESPACE| tr "[:upper:]" "[:lower:]" | sed "s/[^a-zA-Z0-9-]/-/g")
 KUBECTL="kubectl --server=$KUBE_SERVER --token=$KUBE_TOKEN"
 RANCHER="rancher"
 RANCHER_DIR="$HOME/.rancher"
@@ -50,6 +49,10 @@ function rancher_namespace {
 	$RANCHER namespace | grep -q "$KUBE_NAMESPACE\s*$KUBE_NAMESPACE" || $RANCHER namespace create "$KUBE_NAMESPACE"
 }
 
-function namespace_secret_to_project_registry {
+function namespace_secret_project_registry {
 	$KUBECTL -n $KUBE_NAMESPACE describe secret docker-registry-${CI_PROJECT_PATH_SLUG} || $KUBECTL -n $KUBE_NAMESPACE create secret docker-registry docker-registry-${CI_PROJECT_PATH_SLUG} --docker-server=${CI_REGISTRY} --docker-username=${CI_DEPLOY_USER} --docker-password=${CI_DEPLOY_PASSWORD} --docker-email=${ADMIN_EMAIL}
+}
+
+function namespace_secret_rabbitmq () {
+	$KUBECTL -n $KUBE_NAMESPACE describe secret $1 || $KUBECTL -n $KUBE_NAMESPACE create secret generic $1 --from-literal=RABBITMQ_HOST="$RABBITMQ_HOST" --from-literal=RABBITMQ_PORT="$RABBITMQ_PORT" --from-literal=RABBITMQ_USER="$RABBITMQ_USER" --from-literal=RABBITMQ_PASS="$RABBITMQ_PASS" --from-literal=RABBITMQ_VHOST="$RABBITMQ_VHOST"
 }
