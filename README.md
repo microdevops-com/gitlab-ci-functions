@@ -25,7 +25,7 @@ after_script:
 ...
 
 prepare_rancher_namespace:
-  stage: prepare_rancher_namespace
+  stage: prerequisites
   script:
     - . ./kubernetes.sh
     - rancher_namespace
