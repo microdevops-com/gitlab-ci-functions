@@ -41,3 +41,7 @@ function rancher_unlock {
 	rm -rf "$RANCHER_LOCK_DIR"
 	echo "NOTICE: Successfully removed lock on $RANCHER_LOCK_DIR"
 }
+
+function rancher_logout {
+	rm -rf $RANCHER_DIR
+}
