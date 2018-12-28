@@ -49,6 +49,7 @@ function rancher_logout {
 }
 
 function rancher_namespace {
+	echo "KUBE_NAMESPACE: $KUBE_NAMESPACE"
 	$RANCHER namespace | grep -q "$KUBE_NAMESPACE\s*$KUBE_NAMESPACE" || $RANCHER namespace create "$KUBE_NAMESPACE"
 }
 
