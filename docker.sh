@@ -1,5 +1,9 @@
 #!/bin/bash
 
+function registry_login {
+	docker login -u "$CI_REGISTRY_USER" -p "$CI_JOB_TOKEN" "$CI_REGISTRY"
+}
+
 function docker_build_dir () {
 	if [ -z "$3" ]; then
 		cd $2 && docker build --pull -t $1 .

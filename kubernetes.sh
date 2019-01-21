@@ -9,10 +9,6 @@ RANCHER_LOCK_RETRIES_MAX=60
 RANCHER_LOCK_SLEEP_TIME=5
 HELM="helm --kubeconfig ./.helm/cluster.yml --home ./.helm"
 
-function registry_login {
-	docker login -u "$CI_REGISTRY_USER" -p "$CI_JOB_TOKEN" "$CI_REGISTRY"
-}
-
 function kubectl_namespace {
 	$KUBECTL describe namespace "$KUBE_NAMESPACE" || $KUBECTL create namespace "$KUBE_NAMESPACE"
 }
