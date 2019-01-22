@@ -55,6 +55,12 @@ function namespace_secret_project_registry {
 		-o yaml --dry-run | $KUBECTL -n $KUBE_NAMESPACE replace --force -f -
 }
 
+function namespace_secret_additional_project_registry () {
+	$KUBECTL -n $KUBE_NAMESPACE create secret docker-registry docker-registry-$1 \
+		--docker-server=${CI_REGISTRY} --docker-username=$2 --docker-password=$3 --docker-email=${ADMIN_EMAIL} \
+		-o yaml --dry-run | $KUBECTL -n $KUBE_NAMESPACE replace --force -f -
+}
+
 function namespace_secret_rabbitmq () {
 	$KUBECTL -n $KUBE_NAMESPACE create secret generic $1 \
 		--from-literal=RABBITMQ_HOST="$RABBITMQ_HOST" --from-literal=RABBITMQ_PORT="$RABBITMQ_PORT" --from-literal=RABBITMQ_USER="$RABBITMQ_USER" --from-literal=RABBITMQ_PASS="$RABBITMQ_PASS" --from-literal=RABBITMQ_VHOST="$RABBITMQ_VHOST" \
