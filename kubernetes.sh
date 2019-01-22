@@ -105,5 +105,5 @@ function helm_init_namespace {
 }
 
 function helm_deploy () {
-	$HELM upgrade --tiller-namespace $KUBE_NAMESPACE --namespace $KUBE_NAMESPACE --recreate-pods --install $1 --set image.tag=$2 .helm/$1
+	$HELM upgrade --tiller-namespace $KUBE_NAMESPACE --namespace $KUBE_NAMESPACE --recreate-pods --install $1 --set image.tag=$2 .helm/$1 $3
 }
