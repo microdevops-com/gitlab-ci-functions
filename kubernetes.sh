@@ -113,3 +113,24 @@ function helm_init_namespace {
 function helm_deploy () {
 	$HELM upgrade --tiller-namespace $KUBE_NAMESPACE --namespace $KUBE_NAMESPACE --recreate-pods --install $1 --set image.tag=$2 .helm/$1 $3
 }
+
+function kubectl_wait_deployment_and_exec_in_container_of_first_running_pod () {
+	local RETRIES=1
+	local RETRIES_MAX=$(echo $1 | awk '{print int($1/5)}')
+	local SLEEP_TIME=5
+	local DEPLOYMENT="$2"
+	local CONTAINER="$3"
+	local COMMAND="$4"
+	until $KUBECTL -n $KUBE_NAMESPACE rollout status deploy/${DEPLOYMENT} | grep -q "successfully rolled out" || (( RETRIES == RETRIES_MAX ))
+	do
+		echo .
+		let "RETRIES++"
+		sleep ${SLEEP_TIME}
+	done
+	if [ ${RETRIES} -eq ${RETRIES_MAX} ]; then
+		echo "ERROR: Deployment rollout timeout"
+		exit 1
+	fi
+	local POD=$($KUBECTL -n $KUBE_NAMESPACE get pods --selector=app.kubernetes.io/name=${DEPLOYMENT} | grep "Running"  | head -n 1 | awk '{print $1}')
+	$KUBECTL -n $KUBE_NAMESPACE exec -it $POD -c $CONTAINER -- $COMMAND
+}
