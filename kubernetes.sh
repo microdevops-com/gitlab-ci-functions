@@ -132,5 +132,5 @@ function kubectl_wait_deployment_and_exec_in_container_of_first_running_pod () {
 		exit 1
 	fi
 	local POD=$($KUBECTL -n $KUBE_NAMESPACE get pods --selector=app.kubernetes.io/name=${DEPLOYMENT} | grep "Running"  | head -n 1 | awk '{print $1}')
-	$KUBECTL -n $KUBE_NAMESPACE exec -it $POD -c $CONTAINER -- $COMMAND
+	$KUBECTL -n $KUBE_NAMESPACE exec $POD -c $CONTAINER -- $COMMAND
 }
