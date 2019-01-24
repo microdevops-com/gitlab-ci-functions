@@ -2,7 +2,7 @@
 
 function registry_login {
 	# store docker login creds in job CWD, so parallel jobs can access registry with own job token
-	export DOCKER_CONFIG .docker
+	export DOCKER_CONFIG=.docker
 	docker login -u "$CI_REGISTRY_USER" -p "$CI_JOB_TOKEN" "$CI_REGISTRY"
 }
 
