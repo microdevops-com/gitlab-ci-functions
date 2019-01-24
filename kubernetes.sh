@@ -114,7 +114,7 @@ function helm_deploy () {
 	$HELM upgrade --tiller-namespace $KUBE_NAMESPACE --namespace $KUBE_NAMESPACE --recreate-pods --install $1 --set image.tag=$2 .helm/$1 $3
 }
 
-function kubectl_wait_deployment_and_exec_in_container_of_first_running_pod () {
+function kubectl_wait_for_deployment_and_exec_in_container_of_first_running_pod () {
 	local RETRIES=1
 	local RETRIES_MAX=$(echo $1 | awk '{print int($1/5)}')
 	local SLEEP_TIME=5
