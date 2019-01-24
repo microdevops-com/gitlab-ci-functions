@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # store docker login creds in job CWD, so parallel jobs can access registry with own job token
-export DOCKER_CONFIG=.docker
+# better to use full path if cd changed
+export DOCKER_CONFIG=$PWD/.docker
 
 function registry_login {
 	docker login -u "$CI_REGISTRY_USER" -p "$CI_JOB_TOKEN" "$CI_REGISTRY"
@@ -9,9 +10,9 @@ function registry_login {
 
 function docker_build_dir () {
 	if [ -z "$3" ]; then
-		cd $2 && docker build --pull -t $1 .
+		pushd $2 && docker build --pull -t $1 . && popd
 	else
-		cd $2 && docker build --pull -t $1 --build-arg CI_COMMIT_REF_NAME=$3 .
+		pushd $2 && docker build --pull -t $1 --build-arg CI_COMMIT_REF_NAME=$3 . && popd
 	fi
 }
 
