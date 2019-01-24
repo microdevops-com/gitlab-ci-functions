@@ -134,3 +134,12 @@ function kubectl_wait_for_deployment_and_exec_in_container_of_first_running_pod 
 	local POD=$($KUBECTL -n $KUBE_NAMESPACE get pods --selector=app.kubernetes.io/name=${DEPLOYMENT} | grep "Running"  | head -n 1 | awk '{print $1}')
 	$KUBECTL -n $KUBE_NAMESPACE exec $POD -c $CONTAINER -- $COMMAND
 }
+
+function kubectl_cp_container_of_first_running_pod () {
+	local DEPLOYMENT="$1"
+	local CONTAINER="$2"
+	local DIR_FROM="$3"
+	local DIR_TO="$4"
+	local POD=$($KUBECTL -n $KUBE_NAMESPACE get pods --selector=app.kubernetes.io/name=${DEPLOYMENT} | grep "Running"  | head -n 1 | awk '{print $1}')
+	$KUBECTL cp -c $CONTAINER $KUBE_NAMESPACE/$POD:$DIR_FROM $DIR_TO
+}
