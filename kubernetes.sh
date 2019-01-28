@@ -4,7 +4,7 @@ KUBECTL="kubectl --server=$KUBE_SERVER --token=$KUBE_TOKEN"
 RANCHER="rancher"
 RANCHER_DIR="$HOME/.rancher"
 RANCHER_LOCK_DIR="$HOME/.rancher/.lock"
-RANCHER_LOCK_RETRIES=0
+RANCHER_LOCK_RETRIES=1
 RANCHER_LOCK_RETRIES_MAX=60
 RANCHER_LOCK_SLEEP_TIME=5
 HELM="helm --kubeconfig ./.helm/cluster.yml --home ./.helm"
