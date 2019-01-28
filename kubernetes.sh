@@ -4,7 +4,7 @@ KUBECTL="kubectl --server=$KUBE_SERVER --token=$KUBE_TOKEN"
 RANCHER="rancher"
 RANCHER_DIR="$HOME/.rancher"
 RANCHER_LOCK_DIR="$HOME/.rancher/.lock"
-RANCHER_LOCK_RETRIES=1
+RANCHER_LOCK_RETRIES=0
 RANCHER_LOCK_RETRIES_MAX=60
 RANCHER_LOCK_SLEEP_TIME=5
 HELM="helm --kubeconfig ./.helm/cluster.yml --home ./.helm"
@@ -27,7 +27,7 @@ function rancher_lock {
 		let "RANCHER_LOCK_RETRIES++"
 		sleep ${RANCHER_LOCK_SLEEP_TIME}
 	done
-	if [ ${RANCHER_LOCK_RETRIES} -ge ${RANCHER_LOCK_RETRIES_MAX} ]; then
+	if [ ${RANCHER_LOCK_RETRIES} -eq ${RANCHER_LOCK_RETRIES_MAX} ]; then
 		echo "ERROR: Cannot acquire lock after ${RANCHER_LOCK_RETRIES} retries, giving up on $RANCHER_LOCK_DIR"
 		exit 1
 	else
@@ -115,7 +115,7 @@ function helm_deploy () {
 }
 
 function kubectl_wait_for_deployment_and_exec_in_container_of_first_running_pod () {
-	local RETRIES=1
+	local RETRIES=0
 	local RETRIES_MAX=$(echo $1 | awk '{print int($1/5)}')
 	local SLEEP_TIME=5
 	local DEPLOYMENT="$2"
@@ -127,7 +127,7 @@ function kubectl_wait_for_deployment_and_exec_in_container_of_first_running_pod 
 		let "RETRIES++"
 		sleep ${SLEEP_TIME}
 	done
-	if [ ${RETRIES} -ge ${RETRIES_MAX} ]; then
+	if [ ${RETRIES} -eq ${RETRIES_MAX} ]; then
 		echo "ERROR: Deployment rollout timeout"
 		exit 1
 	fi
