@@ -115,8 +115,9 @@ function helm_deploy () {
 }
 
 function kubectl_wait_for_deployment_and_exec_in_container_of_first_running_pod () {
-	local RETRIES=0
+	local RETRIES=1
 	local RETRIES_MAX=$(echo $1 | awk '{print int($1/5)}')
+	let "RETRIES_MAX++"
 	local SLEEP_TIME=5
 	local DEPLOYMENT="$2"
 	local CONTAINER="$3"
