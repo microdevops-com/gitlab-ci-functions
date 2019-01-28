@@ -27,7 +27,7 @@ function rancher_lock {
 		let "RANCHER_LOCK_RETRIES++"
 		sleep ${RANCHER_LOCK_SLEEP_TIME}
 	done
-	if [ ${RANCHER_LOCK_RETRIES} -eq ${RANCHER_LOCK_RETRIES_MAX} ]; then
+	if [ ${RANCHER_LOCK_RETRIES} -ge ${RANCHER_LOCK_RETRIES_MAX} ]; then
 		echo "ERROR: Cannot acquire lock after ${RANCHER_LOCK_RETRIES} retries, giving up on $RANCHER_LOCK_DIR"
 		exit 1
 	else
@@ -127,7 +127,7 @@ function kubectl_wait_for_deployment_and_exec_in_container_of_first_running_pod 
 		let "RETRIES++"
 		sleep ${SLEEP_TIME}
 	done
-	if [ ${RETRIES} -eq ${RETRIES_MAX} ]; then
+	if [ ${RETRIES} -ge ${RETRIES_MAX} ]; then
 		echo "ERROR: Deployment rollout timeout"
 		exit 1
 	fi
