@@ -10,3 +10,7 @@ function rabbitmq_create_vhost () {
 function rabbitmq_add_permission () {
 	$RABBITMQADMIN declare permission vhost=$1 user=$2 "configure=.*" "write=.*" "read=.*"
 }
+
+function rabbitmq_vhost_sanitize () {
+	echo $1 | tr "[:upper:]" "[:lower:]" | sed "s/[^a-zA-Z0-9-]/-/g" | head -c 62
+}

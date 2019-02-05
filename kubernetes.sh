@@ -9,6 +9,10 @@ RANCHER_LOCK_RETRIES_MAX=60
 RANCHER_LOCK_SLEEP_TIME=5
 HELM="helm --kubeconfig ./.helm/cluster.yml --home ./.helm"
 
+function kubernetes_namespace_sanitize () {
+	echo $1 | tr "[:upper:]" "[:lower:]" | sed "s/[^a-zA-Z0-9-]/-/g" | head -c 62
+}
+
 function kubectl_namespace {
 	$KUBECTL describe namespace "$KUBE_NAMESPACE" || $KUBECTL create namespace "$KUBE_NAMESPACE"
 }
