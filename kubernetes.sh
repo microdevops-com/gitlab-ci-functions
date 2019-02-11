@@ -143,6 +143,31 @@ function kubectl_wait_for_deployment_and_exec_in_container_of_first_running_pod 
 	$KUBECTL -n $KUBE_NAMESPACE exec $POD -c $CONTAINER -- $COMMAND
 }
 
+function kubectl_wait_for_deployment_and_exec_base64_cmd_in_container_of_first_running_pod () {
+	local RETRIES=1
+	if [ $1 -le 2 ]; then
+		local RETRIES_MAX=2
+	else
+		local RETRIES_MAX=$1
+	fi
+	local SLEEP_TIME=5
+	local DEPLOYMENT="$2"
+	local CONTAINER="$3"
+	local COMMAND="$4"
+	until $KUBECTL -n $KUBE_NAMESPACE rollout status deploy/${DEPLOYMENT} | grep -q "successfully rolled out" || (( RETRIES == RETRIES_MAX ))
+	do
+		echo .
+		let "RETRIES++"
+		sleep ${SLEEP_TIME}
+	done
+	if [ ${RETRIES} -eq ${RETRIES_MAX} ]; then
+		echo "ERROR: Deployment rollout timeout"
+		exit 1
+	fi
+	local POD=$($KUBECTL -n $KUBE_NAMESPACE get pods --selector=app.kubernetes.io/name=${DEPLOYMENT} | grep "Running"  | head -n 1 | awk '{print $1}')
+	$KUBECTL -n $KUBE_NAMESPACE exec $POD -c $CONTAINER -- bash -c 'echo $COMMAND | base64 -d | bash'
+}
+
 function kubectl_cp_container_of_first_running_pod () {
 	local DEPLOYMENT="$1"
 	local CONTAINER="$2"
