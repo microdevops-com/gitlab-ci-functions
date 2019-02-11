@@ -165,7 +165,7 @@ function kubectl_wait_for_deployment_and_exec_base64_cmd_in_container_of_first_r
 		exit 1
 	fi
 	local POD=$($KUBECTL -n $KUBE_NAMESPACE get pods --selector=app.kubernetes.io/name=${DEPLOYMENT} | grep "Running"  | head -n 1 | awk '{print $1}')
-	$KUBECTL -n $KUBE_NAMESPACE exec $POD -c $CONTAINER -- bash -c 'echo $COMMAND | base64 -d | bash'
+	$KUBECTL -n $KUBE_NAMESPACE exec $POD -c $CONTAINER -- bash -c "echo $COMMAND | base64 -d | bash"
 }
 
 function kubectl_cp_container_of_first_running_pod () {
