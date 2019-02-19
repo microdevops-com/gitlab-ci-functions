@@ -12,7 +12,7 @@ function docker_build_dir () {
 	if [ -z "$3" ]; then
 		pushd $2 && docker build --pull -t $1 . && popd
 	else
-		pushd $2 && docker build --pull -t $1 --build-arg CI_COMMIT_REF_NAME=$3 . && popd
+		pushd $2 && docker build --pull -t $1 --build-arg CI_COMMIT_REF_SLUG=$3 . && popd
 	fi
 }
 
@@ -20,6 +20,6 @@ function docker_build_file () {
 	if [ -z "$3" ]; then
 		docker build --pull -t $1 -f $2 .
 	else
-		docker build --pull -t $1 -f $2 --build-arg CI_COMMIT_REF_NAME=$3 .
+		docker build --pull -t $1 -f $2 --build-arg CI_COMMIT_REF_SLUG=$3 .
 	fi
 }
