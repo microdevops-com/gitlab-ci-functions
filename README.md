@@ -16,8 +16,6 @@ P.S. You can directly fetch code from https://raw.githubusercontent.com each tim
 ```
 before_script:
   - rm -f kubernetes.sh && curl -L -s -o kubernetes.sh https://raw.githubusercontent.com/sysadmws/gitlab-ci-functions/master/kubernetes.sh && . ./kubernetes.sh
-  - rm -f docker.sh && curl -L -s -o docker.sh https://raw.githubusercontent.com/sysadmws/gitlab-ci-functions/master/docker.sh && . ./docker.sh
-  - rm -f rabbitmq.sh && curl -L -s -o rabbitmq.sh https://raw.githubusercontent.com/sysadmws/gitlab-ci-functions/master/rabbitmq.sh && . ./rabbitmq.sh
   - ...
 
 ...
@@ -60,6 +58,13 @@ prepare_rabbitmq_vhost:
     - rabbitmq_create_vhost $RABBITMQ_VHOST
     - rabbitmq_add_permission $RABBITMQ_VHOST $RABBITMQ_USER
 
+prepare_postgresql_db:
+  stage: prerequisites
+  script:
+    - . .gitlab-ci-functions/postgresql.sh
+    - postgresql_create_db $PGHOST $PGPORT $PGUSER $PGPASSWORD $POSTGRESQL_DB_PREFIX-$CI_COMMIT_REF_SLUG
+  
+
 prepare_rancher_namespace:
   stage: prerequisites
   script:
@@ -89,6 +94,7 @@ RABBITMQ_PASS=PASS1
 RABBITMQ_MANAGEMENT_USER=project-admin
 RABBITMQ_MANAGEMENT_PASS=PASS2
 RABBITMQ_VHOST_PREFIX=project
+POSTGRESQL_DB_PREFIX=project
 
 KUBE_SERVER=https://rancher.example.com/k8s/clusters/local
 KUBE_TOKEN=kubeconfig-u-xxxxx:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
