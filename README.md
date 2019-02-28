@@ -1,15 +1,43 @@
 # About
-Functions to create dynamic envs within Rancher project in a separate namespace (e.g. per $CI_COMMIT_REF_SLUG).
+Functions to create dynamic envs per $CI_COMMIT_REF_SLUG.
+- Rancher project namespaces
+- RabbitMQ virtual hosts
+- Docker Registry parallel logins
+- PostgreSQL Databases
 
 # Usage
-## Pipeline
-Add the following to `.gitlab-ci.yml` depending on needs:
+## Add this repo as Git Submodule to a project
+
+```
+git submodule add --name .gitlab-ci-functions -b master -- https://github.com/sysadmws/gitlab-ci-functions .gitlab-ci-functions
 ```
 
+P.S. You can directly fetch code from https://raw.githubusercontent.com each time pipeline runs, it is a quick way to start, but not a smart way to use permanently.
+```
 before_script:
   - rm -f kubernetes.sh && curl -L -s -o kubernetes.sh https://raw.githubusercontent.com/sysadmws/gitlab-ci-functions/master/kubernetes.sh && . ./kubernetes.sh
   - rm -f docker.sh && curl -L -s -o docker.sh https://raw.githubusercontent.com/sysadmws/gitlab-ci-functions/master/docker.sh && . ./docker.sh
   - rm -f rabbitmq.sh && curl -L -s -o rabbitmq.sh https://raw.githubusercontent.com/sysadmws/gitlab-ci-functions/master/rabbitmq.sh && . ./rabbitmq.sh
+  - ...
+
+...
+
+after_script:
+  - . ./kubernetes.sh
+  - rancher_logout
+  - ...
+```
+## Pipeline
+Add the following to `.gitlab-ci.yml` depending on needs:
+```
+variables:
+  GIT_SUBMODULE_STRATEGY: normal
+
+before_script:
+  - . .gitlab-ci-functions/kubernetes.sh
+  - . .gitlab-ci-functions/docker.sh
+  - . .gitlab-ci-functions/rabbitmq.sh
+  # this vars are available to script but not available to yml
   - KUBE_NAMESPACE=$(kubernetes_namespace_sanitize $RANCHER_PROJECT-$CI_COMMIT_REF_SLUG)
   - RABBITMQ_VHOST=$(rabbitmq_vhost_sanitize $RABBITMQ_VHOST_PREFIX-$CI_COMMIT_REF_SLUG)
   - registry_login
@@ -18,7 +46,7 @@ before_script:
   - helm_cluster_login
 
 after_script:
-  - . ./kubernetes.sh
+  - . .gitlab-ci-functions/kubernetes.sh
   - rancher_logout
   - rancher_unlock
   - helm_cluster_logout
@@ -28,14 +56,14 @@ after_script:
 prepare_rabbitmq_vhost:
   stage: prerequisites
   script:
-    - . ./rabbitmq.sh
+    - . .gitlab-ci-functions/rabbitmq.sh
     - rabbitmq_create_vhost $RABBITMQ_VHOST
     - rabbitmq_add_permission $RABBITMQ_VHOST $RABBITMQ_USER
 
 prepare_rancher_namespace:
   stage: prerequisites
   script:
-    - . ./kubernetes.sh
+    - . .gitlab-ci-functions/kubernetes.sh
     - rancher_namespace
     - namespace_secret_project_registry
     - namespace_secret_rabbitmq rabbitmq
@@ -44,7 +72,7 @@ prepare_rancher_namespace:
 my-app:
   stage: app_deploy
   script:
-    - . ./kubernetes.sh
+    - . .gitlab-ci-functions/kubernetes.sh
     - helm_deploy my-app $CI_COMMIT_REF_SLUG
     #- helm_deploy my-app $CI_COMMIT_REF_SLUG "--set env=dev"
 ```
