@@ -62,7 +62,7 @@ prepare_postgresql_db:
   stage: prerequisites
   script:
     - . .gitlab-ci-functions/postgresql.sh
-    - postgresql_create_db $PGHOST $PGPORT $PGUSER $PGPASSWORD $POSTGRESQL_DB_PREFIX-$CI_COMMIT_REF_SLUG
+    - postgresql_create_db $POSTGRESQL_DB_PREFIX-$CI_COMMIT_REF_SLUG
   
 
 prepare_rancher_namespace:
@@ -94,6 +94,10 @@ RABBITMQ_PASS=PASS1
 RABBITMQ_MANAGEMENT_USER=project-admin
 RABBITMQ_MANAGEMENT_PASS=PASS2
 RABBITMQ_VHOST_PREFIX=project
+POSTGRESQL_HOST=postgresql.example.com
+POSTGRESQL_PORT=5432
+POSTGRESQL_USER=project-user
+POSTGRESQL_PASS=PASS2
 POSTGRESQL_DB_PREFIX=project
 
 KUBE_SERVER=https://rancher.example.com/k8s/clusters/local
