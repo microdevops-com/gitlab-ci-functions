@@ -3,7 +3,7 @@ Functions to create dynamic envs per $CI_COMMIT_REF_SLUG.
 - Rancher project namespaces
 - RabbitMQ virtual hosts
 - Docker Registry parallel logins
-- PostgreSQL Databases
+- PostgreSQL databases
 
 # Usage
 ## Add this repo as Git Submodule to a project
