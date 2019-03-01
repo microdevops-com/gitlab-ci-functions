@@ -10,5 +10,5 @@ function postgresql_create_db () {
 function postgresql_grant_all_privileges_on_db () {
 	local DB_NAME="$1"
 	local USER_NAME="$2"
-	echo 'GRANT ALL PRIVILEGES ON DATABASE "'$1'" TO "'$2'";' | PGPASSWORD="$POSTGRESQL_PASS" psql -h "$POSTGRESQL_HOST" -p "$POSTGRESQL_PORT" -U "$POSTGRESQL_USER" -w 
+	echo 'GRANT ALL PRIVILEGES ON DATABASE "'$DB_NAME'" TO "'$USER_NAME'";' | PGPASSWORD="$POSTGRESQL_PASS" psql -h "$POSTGRESQL_HOST" -p "$POSTGRESQL_PORT" -U "$POSTGRESQL_USER" -w "$DB_NAME"
 }
