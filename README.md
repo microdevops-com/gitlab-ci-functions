@@ -35,6 +35,7 @@ before_script:
   - . .gitlab-ci-functions/kubernetes.sh
   - . .gitlab-ci-functions/docker.sh
   - . .gitlab-ci-functions/rabbitmq.sh
+  - . .gitlab-ci-functions/postgresql.sh
   # this vars are available to script but not available to yml
   - KUBE_NAMESPACE=$(kubernetes_namespace_sanitize $RANCHER_PROJECT-$CI_COMMIT_REF_SLUG)
   - RABBITMQ_VHOST=$(rabbitmq_vhost_sanitize $RABBITMQ_VHOST_PREFIX-$CI_COMMIT_REF_SLUG)
@@ -54,21 +55,18 @@ after_script:
 prepare_rabbitmq_vhost:
   stage: prerequisites
   script:
-    - . .gitlab-ci-functions/rabbitmq.sh
     - rabbitmq_create_vhost $RABBITMQ_VHOST
     - rabbitmq_add_permission $RABBITMQ_VHOST $RABBITMQ_USER
 
 prepare_postgresql_db:
   stage: prerequisites
   script:
-    - . .gitlab-ci-functions/postgresql.sh
     - postgresql_create_db $POSTGRESQL_DB_PREFIX-$CI_COMMIT_REF_SLUG
   
 
 prepare_rancher_namespace:
   stage: prerequisites
   script:
-    - . .gitlab-ci-functions/kubernetes.sh
     - rancher_namespace
     - namespace_secret_project_registry
     - namespace_secret_rabbitmq rabbitmq
@@ -77,7 +75,6 @@ prepare_rancher_namespace:
 my-app:
   stage: app_deploy
   script:
-    - . .gitlab-ci-functions/kubernetes.sh
     - helm_deploy my-app $CI_COMMIT_REF_SLUG
     #- helm_deploy my-app $CI_COMMIT_REF_SLUG "--set env=dev"
 ```
