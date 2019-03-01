@@ -6,3 +6,9 @@ function postgresql_create_db () {
 	PGPASSWORD="$POSTGRESQL_PASS" psql -h "$POSTGRESQL_HOST" -p "$POSTGRESQL_PORT" -U "$POSTGRESQL_USER" -w -lqt | cut -d \| -f 1 | grep -qw "$NEW_DB_NAME" || \
 		PGPASSWORD="$POSTGRESQL_PASS" createdb -h "$POSTGRESQL_HOST" -p "$POSTGRESQL_PORT" -U "$POSTGRESQL_USER" -w "$NEW_DB_NAME"
 }
+
+function postgresql_grant_all_privileges_on_db () {
+	local DB_NAME="$1"
+	local USER_NAME="$2"
+	echo 'GRANT ALL PRIVILEGES ON DATABASE "'$1'" TO "'$2'";' | PGPASSWORD="$POSTGRESQL_PASS" psql -h "$POSTGRESQL_HOST" -p "$POSTGRESQL_PORT" -U "$POSTGRESQL_USER" -w 
+}
