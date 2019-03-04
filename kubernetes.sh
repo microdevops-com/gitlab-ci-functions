@@ -118,6 +118,10 @@ function helm_deploy () {
 	$HELM upgrade --tiller-namespace $KUBE_NAMESPACE --namespace $KUBE_NAMESPACE --recreate-pods --install $1 --set image.tag=$2 .helm/$1 $3
 }
 
+function helm_deploy_from_dir () {
+	$HELM upgrade --tiller-namespace $KUBE_NAMESPACE --namespace $KUBE_NAMESPACE --recreate-pods --install $2 --set image.tag=$3 $1/.helm/$2 $4
+}
+
 function kubectl_wait_for_deployment_and_exec_in_container_of_first_running_pod () {
 	local RETRIES=1
 	if [ $1 -le 2 ]; then
