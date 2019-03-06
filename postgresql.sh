@@ -4,10 +4,6 @@ function postgresql_create_db () {
 	local NEW_DB_NAME="$1"
 	# check db exist and if not - create
 	echo "Creating DB: $NEW_DB_NAME"
-	echo "DB list:"
-	PGPASSWORD="$POSTGRESQL_PASS" psql -h "$POSTGRESQL_HOST" -p "$POSTGRESQL_PORT" -U "$POSTGRESQL_USER" -w -lqtA | cut -d \| -f 1
-	echo "---"
-	PGPASSWORD="$POSTGRESQL_PASS" psql -h "$POSTGRESQL_HOST" -p "$POSTGRESQL_PORT" -U "$POSTGRESQL_USER" -w -lqtA | cut -d \| -f 1 | grep -w "$NEW_DB_NAME"
 	if PGPASSWORD="$POSTGRESQL_PASS" psql -h "$POSTGRESQL_HOST" -p "$POSTGRESQL_PORT" -U "$POSTGRESQL_USER" -w -lqtA | cut -d \| -f 1 | grep -qw "$NEW_DB_NAME"; then
 		echo "DB $NEW_DB_NAME already exists"
 	else
