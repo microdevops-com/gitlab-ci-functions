@@ -12,3 +12,7 @@ function postgresql_grant_all_privileges_on_db () {
 	local USER_NAME="$2"
 	echo 'GRANT ALL PRIVILEGES ON DATABASE "'$DB_NAME'" TO "'$USER_NAME'";' | PGPASSWORD="$POSTGRESQL_PASS" psql -h "$POSTGRESQL_HOST" -p "$POSTGRESQL_PORT" -U "$POSTGRESQL_USER" -w "$DB_NAME"
 }
+
+function postgresql_db_sanitize () {
+	echo $1 | tr "[:upper:]" "[:lower:]" | sed "s/[^a-zA-Z0-9-]/-/g" | head -c 63
+}
