@@ -75,6 +75,8 @@ function namespace_secret_acme_cert () {
 	local SECRET_NAME="$1"
 	local DNS_DOMAIN="$2"
 	local DNS_SAFE_DOMAIN=$(echo "$2" | sed "s/*/./g")
+	echo "Domain: ${DNS_DOMAIN}"
+	echo "Safe Domain: ${DNS_SAFE_DOMAIN}"
 	openssl verify -CAfile \
 		/opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_ca.cer \
 		/opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_fullchain.cer 2>&1 \
