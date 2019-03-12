@@ -74,18 +74,19 @@ function namespace_secret_rabbitmq () {
 function namespace_secret_acme_cert () {
 	local SECRET_NAME="$1"
 	local DNS_DOMAIN="$2"
+	local DNS_SAFE_DOMAIN=$(echo "$2" | sed "s/*/./g")
 	openssl verify -CAfile \
-		/opt/acme/cert/domain_${DNS_DOMAIN}_ca.cer \
-		/opt/acme/cert/domain_${DNS_DOMAIN}_fullchain.cer 2>&1 \
+		/opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_ca.cer \
+		/opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_fullchain.cer 2>&1 \
 		| grep -q -i -e error; [ ${PIPESTATUS[1]} -eq 0 ] && /opt/acme/home/acme_local.sh \
-		--cert-file /opt/acme/cert/domain_${DNS_DOMAIN}_cert.cer \
-		--key-file /opt/acme/cert/domain_${DNS_DOMAIN}_key.key \
-		--ca-file /opt/acme/cert/domain_${DNS_DOMAIN}_ca.cer \
-		--fullchain-file /opt/acme/cert/domain_${DNS_DOMAIN}_fullchain.cer \
+		--cert-file /opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_cert.cer \
+		--key-file /opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_key.key \
+		--ca-file /opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_ca.cer \
+		--fullchain-file /opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_fullchain.cer \
 		--issue -d "${DNS_DOMAIN}" || true
 	$KUBECTL -n $KUBE_NAMESPACE create secret generic $1 \
-		--from-file=/opt/acme/cert/domain_${DNS_DOMAIN}_key.key \
-		--from-file=/opt/acme/cert/domain_${DNS_DOMAIN}_fullchain.cer \
+		--from-file=/opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_key.key \
+		--from-file=/opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_fullchain.cer \
 		-o yaml --dry-run | $KUBECTL -n $KUBE_NAMESPACE replace --force -f -
 }
 
