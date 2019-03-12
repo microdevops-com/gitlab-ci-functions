@@ -84,6 +84,8 @@ function namespace_secret_acme_cert () {
 		--ca-file /opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_ca.cer \
 		--fullchain-file /opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_fullchain.cer \
 		--issue -d "${DNS_DOMAIN}"
+	else
+		echo "Domain verified - OK"
 	fi
 	$KUBECTL -n $KUBE_NAMESPACE create secret generic $1 \
 		--from-file=/opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_key.key \
