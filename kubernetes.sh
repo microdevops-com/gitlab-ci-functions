@@ -145,6 +145,7 @@ function helm_deploy_from_dir () {
 }
 
 function helm_deploy_by_name_with_config () {
+	$HELM repo update
 	$HELM upgrade --tiller-namespace $KUBE_NAMESPACE --namespace $KUBE_NAMESPACE --recreate-pods --install $1 -f $3 $2
 }
 
