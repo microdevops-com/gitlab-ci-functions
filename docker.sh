@@ -25,9 +25,9 @@ function docker_build_file () {
 }
 
 function docker_build_dir_args () {
-	pushd $2 && docker build --pull -t $1 --build-arg CI_COMMIT_REF_SLUG=$3 . && popd
+	pushd $2 && docker build --pull -t $1 $3 . && popd
 }
 
 function docker_build_file_args () {
-	docker build --pull -t $1 -f $2 --build-arg CI_COMMIT_REF_SLUG=$3 .
+	docker build --pull -t $1 -f $2 $3 .
 }
