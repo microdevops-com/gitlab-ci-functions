@@ -81,6 +81,8 @@ function namespace_secret_acme_cert () {
 	echo "OpenSSL cert:"
 	echo $OPENSSL_RESULT
 	echo "---"
+	echo $OPENSSL_RESULT | grep -i -e error
+	echo "---"
 	if echo $OPENSSL_RESULT | grep -q -i -e error; then
 		/opt/acme/home/acme_local.sh \
 			--cert-file /opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_cert.cer \
