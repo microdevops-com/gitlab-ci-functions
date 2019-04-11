@@ -16,5 +16,10 @@ function rabbitmq_add_read_permission () {
 }
 
 function rabbitmq_vhost_sanitize () {
-	echo $1 | tr "[:upper:]" "[:lower:]" | sed "s/[^a-zA-Z0-9-]/-/g" | head -c 62
+	if [ -z "$2" ]; then
+		local LENGTH="62"
+	else
+		local LENGTH="$2"
+	fi
+	echo $1 | tr "[:upper:]" "[:lower:]" | sed "s/[^a-zA-Z0-9-]/-/g" | head -c $LENGTH | sed "s/-$//g" | tr -d '\n' | tr -d '\r'
 }

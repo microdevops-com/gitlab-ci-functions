@@ -18,5 +18,10 @@ function postgresql_grant_all_privileges_on_db () {
 }
 
 function postgresql_db_sanitize () {
-	echo $1 | tr "[:upper:]" "[:lower:]" | sed "s/[^a-zA-Z0-9-]/-/g" | head -c 63 | tr -d '\n' | tr -d '\r'
+	if [ -z "$2" ]; then
+		local LENGTH="63"
+	else
+		local LENGTH="$2"
+	fi
+	echo $1 | tr "[:upper:]" "[:lower:]" | sed "s/[^a-zA-Z0-9-]/-/g" | head -c $LENGTH | sed "s/-$//g" | tr -d '\n' | tr -d '\r'
 }

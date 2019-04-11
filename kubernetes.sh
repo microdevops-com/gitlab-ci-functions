@@ -15,7 +15,7 @@ function kubernetes_namespace_sanitize () {
 	else
 		local LENGTH="$2"
 	fi
-	echo $1 | tr "[:upper:]" "[:lower:]" | sed "s/[^a-zA-Z0-9-]/-/g" | head -c $LENGTH | sed "s/-$//g"
+	echo $1 | tr "[:upper:]" "[:lower:]" | sed "s/[^a-zA-Z0-9-]/-/g" | head -c $LENGTH | sed "s/-$//g" | tr -d '\n' | tr -d '\r'
 }
 
 function kubectl_namespace {
