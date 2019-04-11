@@ -77,10 +77,11 @@ function namespace_secret_acme_cert () {
 	local DNS_SAFE_DOMAIN=$(echo "$2" | sed "s/*/./g")
 	echo "Domain: ${DNS_DOMAIN}"
 	echo "Safe Domain: ${DNS_SAFE_DOMAIN}"
-	echo "OpenSSL test cert:"
-	openssl verify -CAfile /opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_ca.cer /opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_fullchain.cer || true
+	local OPENSSL_RESULT=$(openssl verify -CAfile /opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_ca.cer /opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_fullchain.cer 2>&1 || true)
+	echo "OpenSSL cert:"
+	echo $OPENSSL_RESULT
 	echo "---"
-	if ( openssl verify -CAfile /opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_ca.cer /opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_fullchain.cer 2>&1 | grep -q -i -e error ) ; then
+	if echo $OPENSSL_RESULT | grep -q -i -e error; then
 		/opt/acme/home/acme_local.sh \
 			--cert-file /opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_cert.cer \
 			--key-file /opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_key.key \
