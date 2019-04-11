@@ -10,7 +10,12 @@ RANCHER_LOCK_SLEEP_TIME=5
 HELM="helm --kubeconfig ./.helm/cluster.yml --home ./.helm"
 
 function kubernetes_namespace_sanitize () {
-	echo $1 | tr "[:upper:]" "[:lower:]" | sed "s/[^a-zA-Z0-9-]/-/g" | head -c 62 | sed "s/-$//g"
+	if [ -z "$2" ]; then
+		local LENGTH="62"
+	else
+		local LENGTH="$2"
+	fi
+	echo $1 | tr "[:upper:]" "[:lower:]" | sed "s/[^a-zA-Z0-9-]/-/g" | head -c $LENGTH | sed "s/-$//g"
 }
 
 function kubectl_namespace {
