@@ -78,15 +78,15 @@ function namespace_secret_acme_cert () {
 	echo "Domain: ${DNS_DOMAIN}"
 	echo "Safe Domain: ${DNS_SAFE_DOMAIN}"
 	echo "OpenSSL test cert:"
-	openssl verify -CAfile /opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_ca.cer /opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_fullchain.cer
+	openssl verify -CAfile /opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_ca.cer /opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_fullchain.cer || true
 	echo "---"
-	if openssl verify -CAfile /opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_ca.cer /opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_fullchain.cer 2>&1 | grep -q -i -e error; then
+	if ( openssl verify -CAfile /opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_ca.cer /opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_fullchain.cer 2>&1 | grep -q -i -e error ) ; then
 		/opt/acme/home/acme_local.sh \
-		--cert-file /opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_cert.cer \
-		--key-file /opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_key.key \
-		--ca-file /opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_ca.cer \
-		--fullchain-file /opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_fullchain.cer \
-		--issue -d "${DNS_DOMAIN}"
+			--cert-file /opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_cert.cer \
+			--key-file /opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_key.key \
+			--ca-file /opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_ca.cer \
+			--fullchain-file /opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_fullchain.cer \
+			--issue -d "${DNS_DOMAIN}"
 	else
 		echo "Domain verified - OK"
 	fi
