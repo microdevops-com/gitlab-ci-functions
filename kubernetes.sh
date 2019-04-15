@@ -8,6 +8,11 @@ RANCHER_LOCK_RETRIES=1
 RANCHER_LOCK_RETRIES_MAX=60
 RANCHER_LOCK_SLEEP_TIME=5
 HELM="helm --kubeconfig ./.helm/cluster.yml --home ./.helm"
+HELM_DIR="$HOME/.helm"
+HELM_LOCK_DIR="$HOME/.helm/.lock"
+HELM_LOCK_RETRIES=1
+HELM_LOCK_RETRIES_MAX=60
+HELM_LOCK_SLEEP_TIME=5
 
 function kubernetes_namespace_sanitize () {
 	if [ -z "$2" ]; then
@@ -128,6 +133,27 @@ function helm_cluster_login {
 
 	current-context: "remote-cluster"	
 	EOF
+}
+
+function helm_lock {
+	mkdir -p $HELM_DIR
+	until mkdir "$HELM_LOCK_DIR" || (( HELM_LOCK_RETRIES == HELM_LOCK_RETRIES_MAX ))
+	do
+		echo "NOTICE: Acquiring lock failed on $HELM_LOCK_DIR, sleeping for ${HELM_LOCK_SLEEP_TIME}s"
+		let "HELM_LOCK_RETRIES++"
+		sleep ${HELM_LOCK_SLEEP_TIME}
+	done
+	if [ ${HELM_LOCK_RETRIES} -eq ${HELM_LOCK_RETRIES_MAX} ]; then
+		echo "ERROR: Cannot acquire lock after ${HELM_LOCK_RETRIES} retries, giving up on $HELM_LOCK_DIR"
+		exit 1
+	else
+		echo "NOTICE: Successfully acquired lock on $HELM_LOCK_DIR"
+	fi	
+}
+
+function helm_unlock {
+	rm -rf "$HELM_LOCK_DIR"
+	echo "NOTICE: Successfully removed lock on $HELM_LOCK_DIR"
 }
 
 # We shouldn't leave credentials in the workspace as they may change
