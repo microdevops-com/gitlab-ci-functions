@@ -36,5 +36,5 @@ function mysql_delete_from_table_where () {
 	local DB_NAME="$1"
 	local TABLE="$2"
 	local WHERE="$3"
-	echo 'DELETE FROM TABLE `'$TABLE'` WHERE '$WHERE';' | mysql -u "$MYSQL_USER" --password="$MYSQL_PASS" -h "$MYSQL_HOST" -P "$MYSQL_PORT" "$DB_NAME"
+	echo 'DELETE FROM `'$TABLE'` WHERE '$WHERE';' | mysql -u "$MYSQL_USER" --password="$MYSQL_PASS" -h "$MYSQL_HOST" -P "$MYSQL_PORT" "$DB_NAME"
 }
