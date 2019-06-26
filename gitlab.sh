@@ -13,10 +13,12 @@ function gitlab_trigger_pipeline_and_wait_success () {
 	local VARIABLES="$4"
 	local PRIVATE_TOKEN="$5"
 	
+	local CURL_CMD="curl --request POST --form token=$CI_JOB_TOKEN --form ref=$REF $VARIABLES $GITLAB_URL/api/v4/projects/$PROJECT_ID/trigger/pipeline"
+	
 	# Echo curl command
-	echo curl --request POST --form token=$CI_JOB_TOKEN --form ref=$REF $VARIABLES $GITLAB_URL/api/v4/projects/$PROJECT_ID/trigger/pipeline
+	echo $CURL_CMD
 	# Trigger pipeline and save output
-	CURL_OUT=$(curl --request POST --form token=$CI_JOB_TOKEN --form ref=$REF $VARIABLES $GITLAB_URL/api/v4/projects/$PROJECT_ID/trigger/pipeline)
+	CURL_OUT=$($CURL_CMD)
 	# Debug output
 	echo $CURL_OUT
 	# Check typical errors in output and fail job if any
