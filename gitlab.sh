@@ -10,7 +10,7 @@ function gitlab_trigger_pipeline_and_wait_success () {
 	local GITLAB_URL="$1"
 	local PROJECT_ID="$2"
 	local REF="$3"
-	local VARIABLES="$4"
+	local VARIABLES='$4'
 	local PRIVATE_TOKEN="$5"
 	
 	# Echo curl command
