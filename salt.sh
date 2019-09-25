@@ -1,6 +1,6 @@
 #!/bin/bash
 
-function salt_call_deploy () {
+function salt_call_app_docker () {
 	local DEPLOY_SERVER="$1"
 	local DEPLOY_IMAGE="$2"
 	local DEPLOY_APP="$3"
