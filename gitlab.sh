@@ -8,7 +8,8 @@ function gitlab_trigger_pipeline_and_wait_success () {
 	# While private token or trigger token also can be used to trigger token, GitLab will not show Downstream if they are used. Only CI_JOB_TOKEN produces downstream graph.
 
 	local GITLAB_URL="$1"
-	local PROJECT_ID="$2"
+	# Substitute / in project id if namespace used with url safe symbols
+	local PROJECT_ID="$(echo $2 | sed -e 's#/#%2F#g')"
 	local REF="$3"
 	local VARIABLES="$4"
 	local PRIVATE_TOKEN="$5"
