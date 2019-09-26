@@ -59,6 +59,14 @@ function copy_to_repo_as_root_dir () {
 	rsync -a ${ADD}/ ${GIT_REPO_DIR}/
 }
 
+function copy_file_to_repo () {
+	local ADD="$1"
+
+	if [ -z "${GIT_REPO_DIR}" ]; then echo "ERROR: GIT_REPO_DIR var not set"; exit 1; fi
+
+	cp ${ADD} ${GIT_REPO_DIR}
+}
+
 function git_add_submodule () {
 	local SUBM_NAME="$1"
 	local SUBM_BRANCH="$2"
