@@ -55,5 +55,5 @@ function gitlab_trigger_pipeline_and_wait_success () {
 		echo "ERROR: status($PIPELINE_STATUS) is unknown to wait any longer"
 		exit 1
 	done
-	echo "NOTICE: Successfully deployed"
+	echo "NOTICE: Successfully finished pipeline"
 }
