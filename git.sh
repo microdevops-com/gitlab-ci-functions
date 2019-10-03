@@ -83,13 +83,14 @@ function git_add_submodule () {
 function git_force_push_and_rm_tmp_git_repo () {
 	local COMMIT_NAME="$1"
 	local COMMIT_EMAIL="$2"
+	local COMMIT_OPTS="$3"
 
 	if [ -z "${GIT_REPO_DIR}" ]; then echo "ERROR: GIT_REPO_DIR var not set"; exit 1; fi
 
 	pushd ${GIT_REPO_DIR}
 	git add -A
 	git -c "user.name=${COMMIT_NAME}" -c "user.email=${COMMIT_EMAIL}" commit -m "Force push from upstream repo"
-	git push --set-upstream downstream ${CI_COMMIT_REF_NAME} -f
+	bash -c "git push --set-upstream downstream ${CI_COMMIT_REF_NAME} -f ${COMMIT_OPTS}"
 	popd
 	rm -rf ${GIT_REPO_DIR}
 }
