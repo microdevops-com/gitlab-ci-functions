@@ -10,25 +10,30 @@ function registry_login {
 
 function docker_build_dir () {
 	if [ -z "$3" ]; then
+		echo CMD: docker build --pull -t $1 .
 		pushd $2 && docker build --pull -t $1 . && popd
 	else
+		echo CMD: docker build --pull -t $1 --build-arg CI_COMMIT_REF_SLUG=$3 .
 		pushd $2 && docker build --pull -t $1 --build-arg CI_COMMIT_REF_SLUG=$3 . && popd
 	fi
 }
 
 function docker_build_file () {
 	if [ -z "$3" ]; then
+		echo CMD: docker build --pull -t $1 -f $2 .
 		docker build --pull -t $1 -f $2 .
 	else
+		echo CMD: docker build --pull -t $1 -f $2 --build-arg CI_COMMIT_REF_SLUG=$3 .
 		docker build --pull -t $1 -f $2 --build-arg CI_COMMIT_REF_SLUG=$3 .
 	fi
 }
 
 function docker_build_dir_args () {
+	echo CMD: docker build --pull -t $1 $3 .
 	pushd $2 && docker build --pull -t $1 $3 . && popd
 }
 
 function docker_build_file_args () {
-	echo CMD: bash -c "docker build --pull -t $1 -f $2 $3 ."
-	bash -c "docker build --pull -t $1 -f $2 $3 ."
+	echo CMD: docker build --pull -t $1 -f $2 $3 .
+	docker build --pull -t $1 -f $2 $3 .
 }
