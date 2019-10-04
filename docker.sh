@@ -30,7 +30,7 @@ function docker_build_file () {
 
 function docker_build_dir_args () {
 	echo CMD: docker build --pull -t $1 $3 .
-	pushd $2 && docker build --pull -t $1 $3 . && popd
+	pushd $2 && bash -c "docker build --pull -t $1 $3 ." && popd
 }
 
 function docker_build_file_args () {
