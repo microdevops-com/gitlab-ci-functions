@@ -34,6 +34,6 @@ function docker_build_dir_args () {
 }
 
 function docker_build_file_args () {
-	echo CMD: docker build --pull -t $1 -f $2 $3 .
+	echo CMD: bash -c 'docker build --pull -t '$1' -f '$2' '$3' .'
 	bash -c 'docker build --pull -t '$1' -f '$2' '$3' .'
 }
