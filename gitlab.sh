@@ -59,7 +59,13 @@ function gitlab_trigger_pipeline_and_wait_success () {
 }
 
 function clean_build_dir () {
-	if [ -n "${CI_PROJECT_DIR}" ]; then
-		find "${CI_PROJECT_DIR}" -mindepth 1 -maxdepth 1 -print0 | xargs -0 rm -rf
+	if [ -n "$1" ]; then
+		if [ -n "${CI_PROJECT_DIR}" ]; then
+			find "${CI_PROJECT_DIR}" -mindepth 1 -maxdepth 1 -not -path "$1" -print0 | xargs -0 rm -rf
+		fi
+	else
+		if [ -n "${CI_PROJECT_DIR}" ]; then
+			find "${CI_PROJECT_DIR}" -mindepth 1 -maxdepth 1 -print0 | xargs -0 rm -rf
+		fi
 	fi
 }
