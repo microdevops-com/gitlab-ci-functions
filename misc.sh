@@ -1,5 +1,12 @@
 #!/bin/bash
 
+function check_var () {
+	if [ -z "${!1}" ]; then
+		echo "ERROR: var $1 is empty"
+		exit 1
+	fi
+}
+
 function ssh_salt_call_app_docker () {
 	local DEPLOY_SERVER="$1"
 	local DEPLOY_IMAGE="$2"
