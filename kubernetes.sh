@@ -64,6 +64,18 @@ function rancher_namespace {
 }
 
 function namespace_secret_project_registry {
+	if [ -z "${CI_REGISTRY}" ]; then
+		echo "ERROR: var CI_REGISTRY empty"
+		exit 1
+	fi
+	if [ -z "${CI_DEPLOY_USER}" ]; then
+		echo "ERROR: var CI_DEPLOY_USER empty"
+		exit 1
+	fi
+	if [ -z "${CI_DEPLOY_PASSWORD}" ]; then
+		echo "ERROR: var CI_DEPLOY_PASSWORD empty"
+		exit 1
+	fi
 	$KUBECTL -n $KUBE_NAMESPACE create secret docker-registry docker-registry-${CI_PROJECT_PATH_SLUG} \
 		--docker-server=${CI_REGISTRY} --docker-username=${CI_DEPLOY_USER} --docker-password=${CI_DEPLOY_PASSWORD} --docker-email=${ADMIN_EMAIL} \
 		-o yaml --dry-run | $KUBECTL -n $KUBE_NAMESPACE replace --force -f -
