@@ -33,7 +33,7 @@ function ssh_copy_from_docker () {
 	ssh -o BatchMode=yes -o StrictHostKeyChecking=no root@${DEPLOY_SERVER} 'docker login -u "'${CI_REGISTRY_USER}'" -p "'${CI_JOB_TOKEN}'" "'${CI_REGISTRY}'"'
 	ssh -o BatchMode=yes -o StrictHostKeyChecking=no root@${DEPLOY_SERVER} 'docker pull '${DEPLOY_IMAGE}''
 
-	if [ -z "$DEPLOY_TARGET" ]; then
+	if [ -z "$DEPLOY_EXCLUDE" ]; then
 		ssh -o BatchMode=yes -o StrictHostKeyChecking=no root@${DEPLOY_SERVER} 'DOCKER_TMP_DIR=$(mktemp -d -t docker.XXXXXXXXXX); DEPLOY_TMP_CONTAINER=$(docker create '${DEPLOY_IMAGE}'); docker export ${DEPLOY_TMP_CONTAINER} | tar -C ${DOCKER_TMP_DIR} --strip-components='${DEPLOY_STRIP}' -xf - '${DEPLOY_SOURCE}'; rsync -a --delete ${DOCKER_TMP_DIR}/ '${DEPLOY_TARGET}'/; chmod 755 '${DEPLOY_TARGET}'; docker rm ${DEPLOY_TMP_CONTAINER}; rm -rf ${DOCKER_TMP_DIR}'
 	else
 		ssh -o BatchMode=yes -o StrictHostKeyChecking=no root@${DEPLOY_SERVER} 'DOCKER_TMP_DIR=$(mktemp -d -t docker.XXXXXXXXXX); DEPLOY_TMP_CONTAINER=$(docker create '${DEPLOY_IMAGE}'); docker export ${DEPLOY_TMP_CONTAINER} | tar -C ${DOCKER_TMP_DIR} --strip-components='${DEPLOY_STRIP}' -xf - '${DEPLOY_SOURCE}'; rsync -a --delete --exclude '${DEPLOY_EXCLUDE}' ${DOCKER_TMP_DIR}/ '${DEPLOY_TARGET}'/; chmod 755 '${DEPLOY_TARGET}'; docker rm ${DEPLOY_TMP_CONTAINER}; rm -rf ${DOCKER_TMP_DIR}'
