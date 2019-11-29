@@ -17,6 +17,12 @@ function mysql_query_from_file () {
 	cat "$FILE" | mysql -vv -u "$MYSQL_USER" --password="$MYSQL_PASS" -h "$MYSQL_HOST" -P "$MYSQL_PORT" "$DB_NAME"
 }
 
+function mysql_query_from_file_no_verbose () {
+	local DB_NAME="$1"
+	local FILE="$2"
+	cat "$FILE" | mysql -u "$MYSQL_USER" --password="$MYSQL_PASS" -h "$MYSQL_HOST" -P "$MYSQL_PORT" "$DB_NAME"
+}
+
 function mysql_grant_all_privileges_on_db () {
 	local DB_NAME="$1"
 	local USER_NAME="$2"
