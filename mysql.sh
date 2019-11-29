@@ -5,6 +5,11 @@ function mysql_create_db () {
 	echo 'CREATE DATABASE IF NOT EXISTS `'$NEW_DB_NAME'`;' | mysql -vv -u "$MYSQL_USER" --password="$MYSQL_PASS" -h "$MYSQL_HOST" -P "$MYSQL_PORT"
 }
 
+function mysql_truncate_db () {
+	local DB_NAME="$1"
+	mysql -vv -u "$MYSQL_USER" --password="$MYSQL_PASS" -h "$MYSQL_HOST" -P "$MYSQL_PORT" -Nse 'show tables' "$DB_NAME" | while read table; do mysql -vv -u "$MYSQL_USER" --password="$MYSQL_PASS" -h "$MYSQL_HOST" -P "$MYSQL_PORT" -e "DROP TABLE $table" "$DB_NAME"; done
+}
+
 function mysql_truncate_table () {
 	local DB_NAME="$1"
 	local TABLE="$2"
