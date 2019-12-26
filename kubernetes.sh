@@ -7,12 +7,8 @@ RANCHER_LOCK_DIR="$HOME/.rancher/.lock"
 RANCHER_LOCK_RETRIES=1
 RANCHER_LOCK_RETRIES_MAX=60
 RANCHER_LOCK_SLEEP_TIME=5
-HELM="helm --kubeconfig ./.helm/cluster.yml --home ./.helm"
-HELM_DIR="$HOME/.helm"
-HELM_LOCK_DIR="$HOME/.helm/.lock"
-HELM_LOCK_RETRIES=1
-HELM_LOCK_RETRIES_MAX=60
-HELM_LOCK_SLEEP_TIME=5
+# make cluster.yml parallel jobs safe
+HELM="helm --kubeconfig $PWD/.helm/cluster.yml"
 
 function kubernetes_namespace_sanitize () {
 	if [ -z "$2" ]; then
@@ -122,8 +118,8 @@ function namespace_secret_acme_cert () {
 }
 
 function helm_cluster_login {
-	mkdir -p ./.helm
-	cat <<- EOF > ./.helm/cluster.yml
+	mkdir -p $PWD/.helm
+	cat <<- EOF > $PWD/.helm/cluster.yml
 	apiVersion: v1
 	kind: Config
 	clusters:
@@ -148,56 +144,33 @@ function helm_cluster_login {
 }
 
 function helm_lock {
-	mkdir -p $HELM_DIR
-	until mkdir "$HELM_LOCK_DIR" || (( HELM_LOCK_RETRIES == HELM_LOCK_RETRIES_MAX ))
-	do
-		echo "NOTICE: Acquiring lock failed on $HELM_LOCK_DIR, sleeping for ${HELM_LOCK_SLEEP_TIME}s"
-		let "HELM_LOCK_RETRIES++"
-		sleep ${HELM_LOCK_SLEEP_TIME}
-	done
-	if [ ${HELM_LOCK_RETRIES} -eq ${HELM_LOCK_RETRIES_MAX} ]; then
-		echo "ERROR: Cannot acquire lock after ${HELM_LOCK_RETRIES} retries, giving up on $HELM_LOCK_DIR"
-		exit 1
-	else
-		echo "NOTICE: Successfully acquired lock on $HELM_LOCK_DIR"
-	fi	
+	echo "NOTICE: Helm is parallel jobs safe now, you can safely remove helm_lock/helm_unlock calls"
 }
 
 function helm_unlock {
-	rm -rf "$HELM_LOCK_DIR"
-	echo "NOTICE: Successfully removed lock on $HELM_LOCK_DIR"
+	echo "NOTICE: Helm is parallel jobs safe now, you can safely remove helm_lock/helm_unlock calls"
 }
 
 # We shouldn't leave credentials in the workspace as they may change
 function helm_cluster_logout {
-	rm -f ./.helm/cluster.yml
+	rm -f $PWD/.helm/cluster.yml
 }
 
 function helm_init_namespace {
-	if ! $HELM ls --namespace $KUBE_NAMESPACE --tiller-namespace $KUBE_NAMESPACE; then
-		$KUBECTL -n $KUBE_NAMESPACE delete deployment tiller-deploy || true
-		$KUBECTL -n $KUBE_NAMESPACE create serviceaccount tiller \
-			-o yaml --dry-run | $KUBECTL -n $KUBE_NAMESPACE replace --force -f -
-		$KUBECTL -n $KUBE_NAMESPACE create rolebinding tiller-namespace-admin --clusterrole=admin --serviceaccount=${KUBE_NAMESPACE}:tiller \
-			-o yaml --dry-run | $KUBECTL -n $KUBE_NAMESPACE replace --force -f -
-		$HELM init --upgrade --tiller-namespace $KUBE_NAMESPACE --service-account tiller
-		until $KUBECTL -n $KUBE_NAMESPACE rollout status deploy/tiller-deploy | grep -q "successfully rolled out"; do echo .; done
-	fi
-	# reinit files repositories.yaml etc - they are being cleaned on logout
-	$HELM init --client-only
-	$HELM repo update --tiller-namespace $KUBE_NAMESPACE
+	$HELM repo add stable https://kubernetes-charts.storage.googleapis.com/
+	$HELM repo update
 }
 
 function helm_deploy () {
-	$HELM upgrade --wait --tiller-namespace $KUBE_NAMESPACE --namespace $KUBE_NAMESPACE --recreate-pods --install $1 --set image.tag=$2 .helm/$1 $3
+	$HELM upgrade --wait --namespace $KUBE_NAMESPACE --recreate-pods --install $1 --set image.tag=$2 .helm/$1 $3
 }
 
 function helm_deploy_from_dir () {
-	$HELM upgrade --wait --tiller-namespace $KUBE_NAMESPACE --namespace $KUBE_NAMESPACE --recreate-pods --install $2 --set image.tag=$3 $1/.helm/$2 $4
+	$HELM upgrade --wait --namespace $KUBE_NAMESPACE --recreate-pods --install $2 --set image.tag=$3 $1/.helm/$2 $4
 }
 
 function helm_deploy_by_name_with_config () {
-	$HELM upgrade --wait --tiller-namespace $KUBE_NAMESPACE --namespace $KUBE_NAMESPACE --recreate-pods --install $1 -f $3 $2
+	$HELM upgrade --wait --namespace $KUBE_NAMESPACE --recreate-pods --install $1 -f $3 $2
 }
 
 function kubectl_wait_for_deployment_and_exec_in_container_of_first_running_pod () {
