@@ -78,7 +78,8 @@ function namespace_secret_project_registry {
 }
 
 function namespace_secret_additional_project_registry () {
-	$KUBECTL -n $KUBE_NAMESPACE create secret docker-registry docker-registry-$1 \
+	local SAFE_REGISTRY_NAME=$(echo $1 | tr "[:upper:]" "[:lower:]" | sed "s/[^a-zA-Z0-9-]/-/g" | sed "s/-$//g" | tr -d '\n' | tr -d '\r')
+	$KUBECTL -n $KUBE_NAMESPACE create secret docker-registry docker-registry-${SAFE_REGISTRY_NAME} \
 		--docker-server=${CI_REGISTRY} --docker-username=$2 --docker-password=$3 --docker-email=${ADMIN_EMAIL} \
 		-o yaml --dry-run | $KUBECTL -n $KUBE_NAMESPACE replace --force -f -
 }
