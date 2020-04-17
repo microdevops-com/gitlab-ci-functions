@@ -7,6 +7,15 @@ function check_var () {
 	fi
 }
 
+function check_var_in_env () {
+	if [ "${!1}" = "$2" ]; then
+		if [ -z "${!3}" ]; then
+			echo "ERROR: var $3 is empty"
+			exit 1
+		fi
+	fi
+}
+
 function ssh_salt_call_app_docker () {
 	local DEPLOY_SERVER="$1"
 	local DEPLOY_IMAGE="$2"
