@@ -163,15 +163,15 @@ function helm_init_namespace {
 }
 
 function helm_deploy () {
-	$HELM upgrade --wait --namespace $KUBE_NAMESPACE --recreate-pods --install $1 --set image.tag=$2 .helm/$1 $3
+	$HELM upgrade --wait --namespace $KUBE_NAMESPACE --install $1 --set image.tag=$2 .helm/$1 $3
 }
 
 function helm_deploy_from_dir () {
-	$HELM upgrade --wait --namespace $KUBE_NAMESPACE --recreate-pods --install $2 --set image.tag=$3 $1/.helm/$2 $4
+	$HELM upgrade --wait --namespace $KUBE_NAMESPACE --install $2 --set image.tag=$3 $1/.helm/$2 $4
 }
 
 function helm_deploy_by_name_with_config () {
-	$HELM upgrade --wait --namespace $KUBE_NAMESPACE --recreate-pods --install $1 -f $3 $2
+	$HELM upgrade --wait --namespace $KUBE_NAMESPACE --install $1 -f $3 $2
 }
 
 function kubectl_wait_for_deployment_and_exec_in_container_of_first_running_pod () {
