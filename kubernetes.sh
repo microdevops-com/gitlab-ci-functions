@@ -1,6 +1,8 @@
 #!/bin/bash
 
-KUBECTL="kubectl --server=$KUBE_SERVER --token=$KUBE_TOKEN"
+#--server=$KUBE_SERVER --token=$KUBE_TOKEN
+
+KUBECTL="rancher kubectl"
 RANCHER="rancher"
 RANCHER_DIR="$HOME/.rancher"
 RANCHER_LOCK_DIR="$HOME/.rancher/.lock"
@@ -25,7 +27,7 @@ function kubectl_namespace {
 
 function rancher_login {
 	mkdir -p $RANCHER_DIR
-	$RANCHER login "$KUBE_SERVER" --token "$KUBE_TOKEN"
+	$RANCHER login "$KUBE_SERVER" --token "$KUBE_TOKEN" --context "$KUBE_CLUSTER:$KUBE_PROJECT"
 }
 
 # Rancher CLI is not concurrant, lock usage
