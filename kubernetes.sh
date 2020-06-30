@@ -1,7 +1,5 @@
 #!/bin/bash
 
-#--server=$KUBE_SERVER --token=$KUBE_TOKEN
-
 KUBECTL="rancher kubectl"
 RANCHER="rancher"
 RANCHER_DIR="$HOME/.rancher"
@@ -95,63 +93,33 @@ function namespace_secret_rabbitmq () {
 function namespace_secret_acme_cert () {
 	local SECRET_NAME="$1"
 	local DNS_DOMAIN="$2"
-	local DNS_SAFE_DOMAIN=$(echo "$2" | sed "s/*/./g")
 	echo "Domain: ${DNS_DOMAIN}"
-	echo "Safe Domain: ${DNS_SAFE_DOMAIN}"
-	local OPENSSL_RESULT=$(openssl verify -CAfile /opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_ca.cer /opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_fullchain.cer 2>&1 || true)
+	local OPENSSL_RESULT=$(openssl verify -CAfile /opt/acme/${DNS_DOMAIN}/ca.cer /opt/acme/${DNS_DOMAIN}/fullchain.cer 2>&1 || true)
 	echo "OpenSSL cert:"
 	echo $OPENSSL_RESULT
 	echo "---"
 	( echo $OPENSSL_RESULT | grep -i -e error ) || true
 	echo "---"
 	if echo $OPENSSL_RESULT | grep -q -i -e error; then
-		/opt/acme/home/acme_local.sh \
-			--cert-file /opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_cert.cer \
-			--key-file /opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_key.key \
-			--ca-file /opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_ca.cer \
-			--fullchain-file /opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_fullchain.cer \
-			--issue -d "${DNS_DOMAIN}"
+		docker run --rm  -it  \
+            -v "/opt/acme":/acme.sh \
+            -e CF_Email=${CF_Email} \
+            -e CF_Key=${CF_Key}  \
+            neilpang/acme.sh \
+			--issue -d "${DNS_DOMAIN}" \
+			--dns dns_cf
 	else
 		echo "Domain verified - OK"
 	fi
 	$KUBECTL -n $KUBE_NAMESPACE create secret tls $1 \
-		--key=/opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_key.key \
-		--cert=/opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_fullchain.cer \
+		--key=/opt/acme/${DNS_DOMAIN}/${DNS_DOMAIN}.key \
+		--cert=/opt/acme/${DNS_DOMAIN}/fullchain.cer \
 		-o yaml --dry-run | $KUBECTL -n $KUBE_NAMESPACE replace --force -f -
 }
 
 function helm_cluster_login {
 	mkdir -p $PWD/.helm
-	cat <<- EOF > $PWD/.helm/cluster.yml
-	apiVersion: v1
-	kind: Config
-	clusters:
-	- name: "remote-cluster"
-	  cluster:
-	    server: "$KUBE_SERVER"
-	    api-version: v1
-
-	users:
-	- name: "user-gvnrn"
-	  user:
-	    token: "$KUBE_TOKEN"
-
-	contexts:
-	- name: "remote-cluster"
-	  context:
-	    user: "user-gvnrn"
-	    cluster: "remote-cluster"
-
-	current-context: "remote-cluster"	
-	EOF
-}
-
-function helm_lock {
-	echo "NOTICE: Helm is parallel jobs safe now, you can safely remove helm_lock/helm_unlock calls"
-}
-
-function helm_unlock {
-	echo "NOTICE: Helm is parallel jobs safe now, you can safely remove helm_lock/helm_unlock calls"
+	rancher cluster kubeconfig ${KUBE_CLUSTER}> $PWD/.helm/cluster.yml
 }
 
 # We shouldn't leave credentials in the workspace as they may change
