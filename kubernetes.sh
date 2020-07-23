@@ -3,6 +3,7 @@
 KUBECTL="rancher kubectl"
 RANCHER="rancher"
 RANCHER_DIR="$HOME/.rancher"
+ACME_DIR="$HOME/.acme"
 RANCHER_LOCK_DIR="$HOME/.rancher/.lock"
 RANCHER_LOCK_RETRIES=1
 RANCHER_LOCK_RETRIES_MAX=60
@@ -85,16 +86,20 @@ function namespace_secret_additional_project_registry () {
 }
 
 function namespace_secret_rabbitmq () {
-	$KUBECTL -n $KUBE_NAMESPACE create secret generic $1 \
-		--from-literal=RABBITMQ_HOST="$RABBITMQ_HOST" --from-literal=RABBITMQ_PORT="$RABBITMQ_PORT" --from-literal=RABBITMQ_USER="$RABBITMQ_USER" --from-literal=RABBITMQ_PASS="$RABBITMQ_PASS" --from-literal=RABBITMQ_VHOST="$RABBITMQ_VHOST" \
-		-o yaml --dry-run | $KUBECTL -n $KUBE_NAMESPACE replace --force -f -
+	${KUBECTL} -n $KUBE_NAMESPACE create secret generic $1 \
+		--from-literal=RABBITMQ_HOST="$RABBITMQ_HOST" \
+		--from-literal=RABBITMQ_PORT="$RABBITMQ_PORT" \
+		--from-literal=RABBITMQ_USER="$RABBITMQ_USER" \
+		--from-literal=RABBITMQ_PASS="$RABBITMQ_PASS" \
+		--from-literal=RABBITMQ_VHOST="$RABBITMQ_VHOST" \
+		-o yaml --dry-run | ${KUBECTL} -n ${KUBE_NAMESPACE} replace --force -f -
 }
 
 function namespace_secret_acme_cert () {
 	local SECRET_NAME="$1"
 	local DNS_DOMAIN="$2"
 	echo "Domain: ${DNS_DOMAIN}"
-	local OPENSSL_RESULT=$(openssl verify -CAfile /opt/acme/${DNS_DOMAIN}/ca.cer /opt/acme/${DNS_DOMAIN}/fullchain.cer 2>&1 || true)
+	local OPENSSL_RESULT=$(openssl verify -CAfile ${ACME_DIR}/${DNS_DOMAIN}/ca.cer ${ACME_DIR}/${DNS_DOMAIN}/fullchain.cer 2>&1 || true)
 	echo "OpenSSL cert:"
 	echo $OPENSSL_RESULT
 	echo "---"
@@ -102,19 +107,19 @@ function namespace_secret_acme_cert () {
 	echo "---"
 	if echo $OPENSSL_RESULT | grep -q -i -e "error\|Cannot\|Can't\|No such file"; then
 		docker run --rm  -it  \
-            -v "/opt/acme":/acme.sh \
-            -e CF_Email=${CF_Email} \
-            -e CF_Key=${CF_Key}  \
+            -v ${ACME_DIR}:/acme.sh \
+            -e CF_Email=${CF_EMAIL} \
+            -e CF_Key=${CF_KEY}  \
             neilpang/acme.sh \
 			--issue -d "${DNS_DOMAIN}" \
 			--dns dns_cf
 	else
 		echo "Domain verified - OK"
 	fi
-	$KUBECTL -n $KUBE_NAMESPACE create secret tls $1 \
+	$KUBECTL -n ${KUBE_NAMESPACE} create secret tls $1 \
 		--key=/opt/acme/${DNS_DOMAIN}/${DNS_DOMAIN}.key \
 		--cert=/opt/acme/${DNS_DOMAIN}/fullchain.cer \
-		-o yaml --dry-run | $KUBECTL -n $KUBE_NAMESPACE replace --force -f -
+		-o yaml --dry-run | $KUBECTL -n ${KUBE_NAMESPACE} replace --force -f -
 }
 
 function helm_cluster_login {
@@ -133,15 +138,15 @@ function helm_init_namespace {
 }
 
 function helm_deploy () {
-	$HELM upgrade --wait --namespace $KUBE_NAMESPACE --install $1 --set image.tag=$2 .helm/$1 $3
+	$HELM upgrade --wait --namespace ${KUBE_NAMESPACE} --install $1 --set image.tag=$2 .helm/$1 $3
 }
 
 function helm_deploy_from_dir () {
-	$HELM upgrade --wait --namespace $KUBE_NAMESPACE --install $2 --set image.tag=$3 $1/.helm/$2 $4
+	$HELM upgrade --wait --namespace ${KUBE_NAMESPACE} --install $2 --set image.tag=$3 $1/.helm/$2 $4
 }
 
 function helm_deploy_by_name_with_config () {
-	$HELM upgrade --wait --namespace $KUBE_NAMESPACE --install $1 -f $3 $2
+	$HELM upgrade --wait --namespace ${KUBE_NAMESPACE} --install $1 -f $3 $2
 }
 
 function kubectl_wait_for_deployment_and_exec_in_container_of_first_running_pod () {
