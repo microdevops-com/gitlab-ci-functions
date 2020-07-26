@@ -117,8 +117,8 @@ function namespace_secret_acme_cert () {
 		echo "Domain verified - OK"
 	fi
 	$KUBECTL -n ${KUBE_NAMESPACE} create secret tls $1 \
-		--key=/opt/acme/${DNS_DOMAIN}/${DNS_DOMAIN}.key \
-		--cert=/opt/acme/${DNS_DOMAIN}/fullchain.cer \
+		--key=${ACME_DIR}/${DNS_DOMAIN}/${DNS_DOMAIN}.key \
+		--cert=${ACME_DIR}/${DNS_DOMAIN}/fullchain.cer \
 		-o yaml --dry-run | $KUBECTL -n ${KUBE_NAMESPACE} replace --force -f -
 }
 
