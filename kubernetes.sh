@@ -106,7 +106,7 @@ function namespace_secret_acme_cert () {
 	( echo $OPENSSL_RESULT | grep -i -e "error\|Cannot\|Can't\|No such file" ) || true
 	echo "---"
 	if echo $OPENSSL_RESULT | grep -q -i -e "error\|Cannot\|Can't\|No such file"; then
-		docker run --rm  -it  \
+		docker run --rm  -t  \
             -v ${ACME_DIR}:/acme.sh \
             -e CF_Email=${CF_EMAIL} \
             -e CF_Key=${CF_KEY}  \
