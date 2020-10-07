@@ -7,6 +7,13 @@ function check_var () {
 	fi
 }
 
+# Salt 3001.1 minion on focal has bug in salt-call, should be fixed in magnesium
+# https://github.com/saltstack/salt/pull/58364
+# https://github.com/saltstack/salt/issues/57456
+# https://github.com/saltstack/salt/issues/57856
+# Workaround:
+# pip3 install --no-binary=:all: pyzmq==18.0.1
+
 function ssh_salt_call_app_docker () {
 	local DEPLOY_SERVER="$1"
 	local DEPLOY_IMAGE="$2"
