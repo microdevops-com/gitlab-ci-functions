@@ -138,10 +138,10 @@ function mysql_select_count_from_table_where_with_connect () {
 	echo 'SELECT COUNT(*) FROM `'$TABLE'` WHERE '$WHERE';' | mysql -s -r -u "$MYSQL_USER" --password="$MYSQL_PASS" -h "$MYSQL_HOST" -P "$MYSQL_PORT" "$DB_NAME"
 }
 function mysql_copy_table_to_local () {
-	echo CMD: Copy table ${TABLE_NAME} with options ${OPTIONS}
 	local DB_NAME="$1"
 	local TABLE_NAME="$2"
 	local OPTIONS="$3"
+	echo CMD: Copy table ${TABLE_NAME} with options ${OPTIONS}
 	mysqldump -alv \
 	-h ${SYNC_MYSQL_STAGE_HOST} -u ${SYNC_MYSQL_STAGE_USER} -p${SYNC_MYSQL_STAGE_PASS} \
 	--databases "${DB_NAME}" --tables "${TABLE_NAME}" --where="${OPTIONS}" 2> /dev/stderr | mysql \
