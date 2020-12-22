@@ -133,7 +133,7 @@ function helm_cluster_logout {
 }
 
 function helm_init_namespace {
-	$HELM repo add stable https://kubernetes-charts.storage.googleapis.com/
+	$HELM repo add stable https://charts.helm.sh/stable
 	$HELM repo update
 }
 
