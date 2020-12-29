@@ -2,10 +2,12 @@
 
 KUBECTL="kubectl --server=$KUBE_SERVER --token=$KUBE_TOKEN"
 # rancher cli v.2.4.10+ that has --config for parallel jobs, previous could be used with HOME var substitution
-if rancher --config 2>&1 | grep -q "flag needs an argument"; then
+RANCHER_CLI_CHECK_OUT=$(rancher --config 2>&1 || true)
+if echo $RANCHER_CLI_CHECK_OUT | grep -q "flag needs an argument"; then
 	RANCHER="rancher --config $PWD/.rancher"
 else
-	RANCHER="HOME=$PWD rancher"
+	# eval is needed because running VAR=val cmd within pipelines tries to run VAR=val as separate command
+	RANCHER="eval HOME=$PWD rancher"
 fi
 # make cluster.yml parallel jobs safe
 HELM="helm --kubeconfig $PWD/.helm/cluster.yml"
@@ -113,6 +115,7 @@ function helm_cluster_login {
 
 	current-context: "remote-cluster"	
 	EOF
+	chmod 600 $PWD/.helm/cluster.yml
 }
 
 # We shouldn't leave credentials in the workspace as they may change
