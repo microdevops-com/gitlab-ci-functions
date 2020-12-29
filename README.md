@@ -5,6 +5,8 @@ Functions to create dynamic envs per $CI_COMMIT_REF_SLUG.
 - Docker Registry parallel logins
 - PostgreSQL databases
 
+Kubectl, rancher cli, helm calls are parallel job safe.
+
 # Usage
 ## Add this repo as Git Submodule to a project
 
@@ -40,14 +42,12 @@ before_script:
   - KUBE_NAMESPACE=$(kubernetes_namespace_sanitize $RANCHER_PROJECT-$CI_COMMIT_REF_SLUG)
   - RABBITMQ_VHOST=$(rabbitmq_vhost_sanitize $RABBITMQ_VHOST_PREFIX-$CI_COMMIT_REF_SLUG)
   - registry_login
-  - rancher_lock
   - rancher_login
   - helm_cluster_login
 
 after_script:
   - . .gitlab-ci-functions/kubernetes.sh
   - rancher_logout
-  - rancher_unlock
   - helm_cluster_logout
 
 ...
