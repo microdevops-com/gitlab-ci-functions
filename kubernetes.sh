@@ -1,12 +1,12 @@
 #!/bin/bash
 
 KUBECTL="kubectl --server=$KUBE_SERVER --token=$KUBE_TOKEN"
-RANCHER="rancher"
-RANCHER_DIR="$HOME/.rancher"
-RANCHER_LOCK_DIR="$HOME/.rancher/.lock"
-RANCHER_LOCK_RETRIES=1
-RANCHER_LOCK_RETRIES_MAX=60
-RANCHER_LOCK_SLEEP_TIME=5
+# rancher cli v.2.4.10+ that has --config for parallel jobs, previous could be used with HOME var substitution
+if rancher --config 2>&1 | grep -q "flag needs an argument"; then
+	RANCHER="rancher --config $PWD/.rancher"
+else
+	RANCHER="HOME=$PWD rancher"
+fi
 # make cluster.yml parallel jobs safe
 HELM="helm --kubeconfig $PWD/.helm/cluster.yml"
 
@@ -24,34 +24,11 @@ function kubectl_namespace {
 }
 
 function rancher_login {
-	mkdir -p $RANCHER_DIR
-	$RANCHER login "$KUBE_SERVER" --token "$KUBE_TOKEN"
-}
-
-# Rancher CLI is not concurrant, lock usage
-function rancher_lock {
-	mkdir -p $RANCHER_DIR
-	until mkdir "$RANCHER_LOCK_DIR" || (( RANCHER_LOCK_RETRIES == RANCHER_LOCK_RETRIES_MAX ))
-	do
-		echo "NOTICE: Acquiring lock failed on $RANCHER_LOCK_DIR, sleeping for ${RANCHER_LOCK_SLEEP_TIME}s"
-		let "RANCHER_LOCK_RETRIES++"
-		sleep ${RANCHER_LOCK_SLEEP_TIME}
-	done
-	if [ ${RANCHER_LOCK_RETRIES} -eq ${RANCHER_LOCK_RETRIES_MAX} ]; then
-		echo "ERROR: Cannot acquire lock after ${RANCHER_LOCK_RETRIES} retries, giving up on $RANCHER_LOCK_DIR"
-		exit 1
-	else
-		echo "NOTICE: Successfully acquired lock on $RANCHER_LOCK_DIR"
-	fi	
-}
-
-function rancher_unlock {
-	rm -rf "$RANCHER_LOCK_DIR"
-	echo "NOTICE: Successfully removed lock on $RANCHER_LOCK_DIR"
+	$RANCHER login --token "$KUBE_TOKEN" "$KUBE_SERVER"
 }
 
 function rancher_logout {
-	rm -f $RANCHER_DIR/*
+	rm -f $PWD/.rancher/cli2.json
 }
 
 function rancher_namespace {
@@ -81,12 +58,6 @@ function namespace_secret_additional_project_registry () {
 	local SAFE_REGISTRY_NAME=$(echo $1 | tr "[:upper:]" "[:lower:]" | sed "s/[^a-zA-Z0-9-]/-/g" | sed "s/-$//g" | tr -d '\n' | tr -d '\r')
 	$KUBECTL -n $KUBE_NAMESPACE create secret docker-registry docker-registry-${SAFE_REGISTRY_NAME} \
 		--docker-server=${CI_REGISTRY} --docker-username=$2 --docker-password=$3 --docker-email=${ADMIN_EMAIL} \
-		-o yaml --dry-run | $KUBECTL -n $KUBE_NAMESPACE replace --force -f -
-}
-
-function namespace_secret_rabbitmq () {
-	$KUBECTL -n $KUBE_NAMESPACE create secret generic $1 \
-		--from-literal=RABBITMQ_HOST="$RABBITMQ_HOST" --from-literal=RABBITMQ_PORT="$RABBITMQ_PORT" --from-literal=RABBITMQ_USER="$RABBITMQ_USER" --from-literal=RABBITMQ_PASS="$RABBITMQ_PASS" --from-literal=RABBITMQ_VHOST="$RABBITMQ_VHOST" \
 		-o yaml --dry-run | $KUBECTL -n $KUBE_NAMESPACE replace --force -f -
 }
 
@@ -142,14 +113,6 @@ function helm_cluster_login {
 
 	current-context: "remote-cluster"	
 	EOF
-}
-
-function helm_lock {
-	echo "NOTICE: Helm is parallel jobs safe now, you can safely remove helm_lock/helm_unlock calls"
-}
-
-function helm_unlock {
-	echo "NOTICE: Helm is parallel jobs safe now, you can safely remove helm_lock/helm_unlock calls"
 }
 
 # We shouldn't leave credentials in the workspace as they may change
@@ -233,4 +196,21 @@ function kubectl_cp_container_of_first_running_pod () {
 	local DIR_TO="$4"
 	local POD=$($KUBECTL -n $KUBE_NAMESPACE get pods --selector=app.kubernetes.io/name=${DEPLOYMENT} | grep "Running"  | head -n 1 | awk '{print $1}')
 	$KUBECTL cp -c $CONTAINER $KUBE_NAMESPACE/$POD:$DIR_FROM $DIR_TO
+}
+
+# Deprecated
+function rancher_lock {
+	echo "NOTICE: rancher cli is parallel jobs safe now, you can safely remove rancher_lock/rancher_unlock calls"
+}
+
+function rancher_unlock {
+	echo "NOTICE: rancher cli is parallel jobs safe now, you can safely remove rancher_lock/rancher_unlock calls"
+}
+
+function helm_lock {
+	echo "NOTICE: Helm is parallel jobs safe now, you can safely remove helm_lock/helm_unlock calls"
+}
+
+function helm_unlock {
+	echo "NOTICE: Helm is parallel jobs safe now, you can safely remove helm_lock/helm_unlock calls"
 }
