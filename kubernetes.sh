@@ -125,6 +125,7 @@ function helm_cluster_logout {
 
 function helm_init_namespace {
 	$HELM repo add stable https://charts.helm.sh/stable
+	$HELM repo add bitnami https://charts.bitnami.com/bitnami
 	$HELM repo update
 }
 
