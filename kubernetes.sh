@@ -129,6 +129,11 @@ function helm_init_namespace {
 	$HELM repo update
 }
 
+function helm_additional_repo {
+	$HELM repo add $1 $2
+	$HELM repo update
+}
+
 function helm_deploy () {
 	$HELM upgrade --wait --namespace $KUBE_NAMESPACE --install $1 --set image.tag=$2 .helm/$1 $3
 }
