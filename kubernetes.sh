@@ -45,8 +45,10 @@ function rancher_namespace {
 	local RANCHER_EXIT_CODE=$?
 	if [[ $RANCHER_EXIT_CODE != 0 ]]; then
 		if echo $RANCHER_OUT | grep -q "code=AlreadyExists"; then
+			echo Error code=AlreadyExists arised, probably it was created by parallel job, and it is ok, ignoring
 			true
 		else
+			echo $RANCHER_OUT
 			false
 		fi
 	fi
@@ -149,15 +151,45 @@ function helm_additional_repo {
 }
 
 function helm_deploy () {
-	$HELM upgrade --wait --namespace $KUBE_NAMESPACE --install $1 --set image.tag=$2 .helm/$1 $3
+	local HELM_OUT=$($HELM upgrade --wait --namespace $KUBE_NAMESPACE --install $1 --set image.tag=$2 .helm/$1 $3 2>&1)
+	local HELM_EXIT_CODE=$?
+	if [[ $HELM_EXIT_CODE != 0 ]]; then
+		if echo $HELM_OUT | grep -q "Error: release: already exists"; then
+			echo Error: release: already exists arised, probably it was created by parallel job, and it is ok, ignoring
+			true
+		else
+			echo $HELM_OUT
+			false
+		fi
+	fi
 }
 
 function helm_deploy_from_dir () {
-	$HELM upgrade --wait --namespace $KUBE_NAMESPACE --install $2 --set image.tag=$3 $1/.helm/$2 $4
+	local HELM_OUT=$($HELM upgrade --wait --namespace $KUBE_NAMESPACE --install $2 --set image.tag=$3 $1/.helm/$2 $4 2>&1)
+	local HELM_EXIT_CODE=$?
+	if [[ $HELM_EXIT_CODE != 0 ]]; then
+		if echo $HELM_OUT | grep -q "Error: release: already exists"; then
+			echo Error: release: already exists arised, probably it was created by parallel job, and it is ok, ignoring
+			true
+		else
+			echo $HELM_OUT
+			false
+		fi
+	fi
 }
 
 function helm_deploy_by_name_with_config () {
-	$HELM upgrade --wait --namespace $KUBE_NAMESPACE --install $1 -f $3 $2
+	local HELM_OUT=$($HELM upgrade --wait --namespace $KUBE_NAMESPACE --install $1 -f $3 $2 2>&1)
+	local HELM_EXIT_CODE=$?
+	if [[ $HELM_EXIT_CODE != 0 ]]; then
+		if echo $HELM_OUT | grep -q "Error: release: already exists"; then
+			echo Error: release: already exists arised, probably it was created by parallel job, and it is ok, ignoring
+			true
+		else
+			echo $HELM_OUT
+			false
+		fi
+	fi
 }
 
 function kubectl_wait_for_deployment_and_exec_in_container_of_first_running_pod () {
