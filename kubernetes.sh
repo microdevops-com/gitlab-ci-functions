@@ -29,6 +29,12 @@ function rancher_login {
 	$RANCHER login --token "$KUBE_TOKEN" "$KUBE_SERVER"
 }
 
+function rancher_login_project {
+	local RANCHER_PROJECT_NAME="$1"
+	local RANCHER_PROJECT_ID=$(echo "" | $RANCHER login --token "$KUBE_TOKEN" "$KUBE_SERVER" 2>/dev/null | grep -E "local\:p-[[:alnum:]]+[[:space:]]+${RANCHER_PROJECT_NAME}" | awk '{print $3}')
+	$RANCHER login --token "$KUBE_TOKEN" --context "$RANCHER_PROJECT_ID" "$KUBE_SERVER"
+}
+
 function rancher_logout {
 	rm -f $PWD/.rancher/cli2.json
 }
