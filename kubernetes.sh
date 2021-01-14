@@ -41,7 +41,15 @@ function rancher_logout {
 
 function rancher_namespace {
 	echo "KUBE_NAMESPACE: $KUBE_NAMESPACE"
-	$RANCHER namespace | grep -q "$KUBE_NAMESPACE\s*$KUBE_NAMESPACE" || $RANCHER namespace create "$KUBE_NAMESPACE"
+	$RANCHER namespace | grep -q "$KUBE_NAMESPACE\s*$KUBE_NAMESPACE" || local RANCHER_OUT=$($RANCHER namespace create "$KUBE_NAMESPACE" 2>&1)
+	local RANCHER_EXIT_CODE=$?
+	if [[ $RANCHER_EXIT_CODE != 0 ]]; then
+		if echo $RANCHER_OUT | grep -q "code=AlreadyExists"; then
+			true
+		else
+			false
+		fi
+	fi
 }
 
 function namespace_secret_project_registry {
