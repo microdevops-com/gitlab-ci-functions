@@ -43,12 +43,12 @@ function rancher_namespace {
 	echo "KUBE_NAMESPACE: $KUBE_NAMESPACE"
 	$RANCHER namespace | grep -q "$KUBE_NAMESPACE\s*$KUBE_NAMESPACE" || local RANCHER_OUT=$($RANCHER namespace create "$KUBE_NAMESPACE" 2>&1)
 	local RANCHER_EXIT_CODE=$?
+	echo $RANCHER_OUT
 	if [[ $RANCHER_EXIT_CODE != 0 ]]; then
 		if echo $RANCHER_OUT | grep -q "code=AlreadyExists"; then
 			echo Error code=AlreadyExists arised, probably it was created by parallel job, and it is ok, ignoring
 			true
 		else
-			echo $RANCHER_OUT
 			false
 		fi
 	fi
@@ -153,12 +153,12 @@ function helm_additional_repo {
 function helm_deploy () {
 	local HELM_OUT=$($HELM upgrade --wait --namespace $KUBE_NAMESPACE --install $1 --set image.tag=$2 .helm/$1 $3 2>&1)
 	local HELM_EXIT_CODE=$?
+	echo $HELM_OUT
 	if [[ $HELM_EXIT_CODE != 0 ]]; then
 		if echo $HELM_OUT | grep -q "Error: release: already exists"; then
 			echo Error: release: already exists arised, probably it was created by parallel job, and it is ok, ignoring
 			true
 		else
-			echo $HELM_OUT
 			false
 		fi
 	fi
@@ -167,12 +167,12 @@ function helm_deploy () {
 function helm_deploy_from_dir () {
 	local HELM_OUT=$($HELM upgrade --wait --namespace $KUBE_NAMESPACE --install $2 --set image.tag=$3 $1/.helm/$2 $4 2>&1)
 	local HELM_EXIT_CODE=$?
+	echo $HELM_OUT
 	if [[ $HELM_EXIT_CODE != 0 ]]; then
 		if echo $HELM_OUT | grep -q "Error: release: already exists"; then
 			echo Error: release: already exists arised, probably it was created by parallel job, and it is ok, ignoring
 			true
 		else
-			echo $HELM_OUT
 			false
 		fi
 	fi
@@ -181,12 +181,12 @@ function helm_deploy_from_dir () {
 function helm_deploy_by_name_with_config () {
 	local HELM_OUT=$($HELM upgrade --wait --namespace $KUBE_NAMESPACE --install $1 -f $3 $2 2>&1)
 	local HELM_EXIT_CODE=$?
+	echo $HELM_OUT
 	if [[ $HELM_EXIT_CODE != 0 ]]; then
 		if echo $HELM_OUT | grep -q "Error: release: already exists"; then
 			echo Error: release: already exists arised, probably it was created by parallel job, and it is ok, ignoring
 			true
 		else
-			echo $HELM_OUT
 			false
 		fi
 	fi
