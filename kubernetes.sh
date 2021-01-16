@@ -42,17 +42,19 @@ function rancher_logout {
 function rancher_namespace {
 	echo "KUBE_NAMESPACE: $KUBE_NAMESPACE"
 	# do not prefix OUT vars with local or exit code will be wrong
-	$RANCHER namespace | grep -q "$KUBE_NAMESPACE\s*$KUBE_NAMESPACE" || { RANCHER_OUT=$($RANCHER namespace create "$KUBE_NAMESPACE" 2>&1) && RANCHER_EXIT_CODE=0 || RANCHER_EXIT_CODE=1; }
-	echo Rancher exit code: $RANCHER_EXIT_CODE
-	echo $RANCHER_OUT
-	if [[ $RANCHER_EXIT_CODE != 0 ]]; then
-		if echo $RANCHER_OUT | grep -q "code=AlreadyExists"; then
-			echo Error code=AlreadyExists arised, probably it was created by parallel job, and it is ok, ignoring
-			true
-		else
-			false
+	$RANCHER namespace | grep -q "$KUBE_NAMESPACE\s*$KUBE_NAMESPACE" || {
+		RANCHER_OUT=$($RANCHER namespace create "$KUBE_NAMESPACE" 2>&1) && RANCHER_EXIT_CODE=0 || RANCHER_EXIT_CODE=1
+		echo Rancher exit code: $RANCHER_EXIT_CODE
+		echo $RANCHER_OUT
+		if [[ $RANCHER_EXIT_CODE != 0 ]]; then
+			if echo $RANCHER_OUT | grep -q "code=AlreadyExists"; then
+				echo Error code=AlreadyExists arised, probably it was created by parallel job, and it is ok, ignoring
+				true
+			else
+				false
+			fi
 		fi
-	fi
+	}
 }
 
 function namespace_secret_project_registry {
