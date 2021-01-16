@@ -153,6 +153,7 @@ function helm_additional_repo {
 function helm_deploy () {
 	local HELM_OUT=$($HELM upgrade --wait --namespace $KUBE_NAMESPACE --install $1 --set image.tag=$2 .helm/$1 $3 2>&1)
 	local HELM_EXIT_CODE=$?
+	echo Helm exit code: $HELM_EXIT_CODE
 	echo $HELM_OUT
 	if [[ $HELM_EXIT_CODE != 0 ]]; then
 		if echo $HELM_OUT | grep -q "Error: release: already exists"; then
@@ -167,6 +168,7 @@ function helm_deploy () {
 function helm_deploy_from_dir () {
 	local HELM_OUT=$($HELM upgrade --wait --namespace $KUBE_NAMESPACE --install $2 --set image.tag=$3 $1/.helm/$2 $4 2>&1)
 	local HELM_EXIT_CODE=$?
+	echo Helm exit code: $HELM_EXIT_CODE
 	echo $HELM_OUT
 	if [[ $HELM_EXIT_CODE != 0 ]]; then
 		if echo $HELM_OUT | grep -q "Error: release: already exists"; then
@@ -181,6 +183,7 @@ function helm_deploy_from_dir () {
 function helm_deploy_by_name_with_config () {
 	local HELM_OUT=$($HELM upgrade --wait --namespace $KUBE_NAMESPACE --install $1 -f $3 $2 2>&1)
 	local HELM_EXIT_CODE=$?
+	echo Helm exit code: $HELM_EXIT_CODE
 	echo $HELM_OUT
 	if [[ $HELM_EXIT_CODE != 0 ]]; then
 		if echo $HELM_OUT | grep -q "Error: release: already exists"; then
