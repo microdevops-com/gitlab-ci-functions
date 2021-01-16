@@ -42,8 +42,8 @@ function rancher_logout {
 function rancher_namespace {
 	echo "KUBE_NAMESPACE: $KUBE_NAMESPACE"
 	# do not prefix OUT vars with local or exit code will be wrong
-	$RANCHER namespace | grep -q "$KUBE_NAMESPACE\s*$KUBE_NAMESPACE" || RANCHER_OUT=$($RANCHER namespace create "$KUBE_NAMESPACE" 2>&1)
-	local RANCHER_EXIT_CODE=$?
+	$RANCHER namespace | grep -q "$KUBE_NAMESPACE\s*$KUBE_NAMESPACE" || { RANCHER_OUT=$($RANCHER namespace create "$KUBE_NAMESPACE" 2>&1) && RANCHER_EXIT_CODE=0 || RANCHER_EXIT_CODE=1; }
+	echo Rancher exit code: $RANCHER_EXIT_CODE
 	echo $RANCHER_OUT
 	if [[ $RANCHER_EXIT_CODE != 0 ]]; then
 		if echo $RANCHER_OUT | grep -q "code=AlreadyExists"; then
@@ -153,8 +153,7 @@ function helm_additional_repo {
 
 function helm_deploy () {
 	# do not prefix OUT vars with local or exit code will be wrong
-	HELM_OUT=$($HELM upgrade --wait --namespace $KUBE_NAMESPACE --install $1 --set image.tag=$2 .helm/$1 $3 2>&1)
-	local HELM_EXIT_CODE=$?
+	HELM_OUT=$($HELM upgrade --wait --namespace $KUBE_NAMESPACE --install $1 --set image.tag=$2 .helm/$1 $3 2>&1) && HELM_EXIT_CODE=0 || HELM_EXIT_CODE=1
 	echo Helm exit code: $HELM_EXIT_CODE
 	echo $HELM_OUT
 	if [[ $HELM_EXIT_CODE != 0 ]]; then
@@ -169,8 +168,7 @@ function helm_deploy () {
 
 function helm_deploy_from_dir () {
 	# do not prefix OUT vars with local or exit code will be wrong
-	HELM_OUT=$($HELM upgrade --wait --namespace $KUBE_NAMESPACE --install $2 --set image.tag=$3 $1/.helm/$2 $4 2>&1)
-	local HELM_EXIT_CODE=$?
+	HELM_OUT=$($HELM upgrade --wait --namespace $KUBE_NAMESPACE --install $2 --set image.tag=$3 $1/.helm/$2 $4 2>&1) && HELM_EXIT_CODE=0 || HELM_EXIT_CODE=1
 	echo Helm exit code: $HELM_EXIT_CODE
 	echo $HELM_OUT
 	if [[ $HELM_EXIT_CODE != 0 ]]; then
@@ -185,8 +183,7 @@ function helm_deploy_from_dir () {
 
 function helm_deploy_by_name_with_config () {
 	# do not prefix OUT vars with local or exit code will be wrong
-	HELM_OUT=$($HELM upgrade --wait --namespace $KUBE_NAMESPACE --install $1 -f $3 $2 2>&1)
-	local HELM_EXIT_CODE=$?
+	HELM_OUT=$($HELM upgrade --wait --namespace $KUBE_NAMESPACE --install $1 -f $3 $2 2>&1) && HELM_EXIT_CODE=0 || HELM_EXIT_CODE=1
 	echo Helm exit code: $HELM_EXIT_CODE
 	echo $HELM_OUT
 	if [[ $HELM_EXIT_CODE != 0 ]]; then
