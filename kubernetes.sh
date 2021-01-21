@@ -153,6 +153,16 @@ function helm_additional_repo {
 	$HELM repo update
 }
 
+function helm_uninstall () {
+	# do not prefix OUT vars with local or exit code will be wrong
+	HELM_OUT=$($HELM uninstall --namespace $KUBE_NAMESPACE $1 2>&1) && HELM_EXIT_CODE=0 || HELM_EXIT_CODE=1
+	echo Helm exit code: $HELM_EXIT_CODE
+	echo $HELM_OUT
+	if [[ $HELM_EXIT_CODE != 0 ]]; then
+		false
+	fi
+}
+
 function helm_deploy () {
 	# do not prefix OUT vars with local or exit code will be wrong
 	HELM_OUT=$($HELM upgrade --wait --wait-for-jobs --atomic --namespace $KUBE_NAMESPACE --install $1 --set image.tag=$2 .helm/$1 $3 2>&1) && HELM_EXIT_CODE=0 || HELM_EXIT_CODE=1
