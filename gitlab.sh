@@ -91,11 +91,12 @@ function runner_resource_lock () {
 
 	mkdir -p ${RESOURCE_LOCK_DIR}
 	echo "NOTICE: Waiting for lock ${RESOURCE_LOCK_LOCK_DIR}: "
-	until mkdir "${RESOURCE_LOCK_LOCK_DIR}" || (( RESOURCE_LOCK_LOCK_RETRIES == RESOURCE_LOCK_LOCK_RETRIES_MAX )); do
+	until mkdir "${RESOURCE_LOCK_LOCK_DIR}" > /dev/null 2>&1 || (( RESOURCE_LOCK_LOCK_RETRIES == RESOURCE_LOCK_LOCK_RETRIES_MAX )); do
 		echo -n "."
 		let "RESOURCE_LOCK_LOCK_RETRIES++"
 		sleep 1
 	done
+	echo
 	if [ ${RESOURCE_LOCK_LOCK_RETRIES} -eq ${RESOURCE_LOCK_LOCK_RETRIES_MAX} ]; then
 		echo "WARNING: Cannot acquire lock after ${RESOURCE_LOCK_LOCK_RETRIES}s, ignoring lock on ${RESOURCE_LOCK_LOCK_DIR} by timeout"
 	else
