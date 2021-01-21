@@ -159,7 +159,12 @@ function helm_uninstall () {
 	echo Helm exit code: $HELM_EXIT_CODE
 	echo $HELM_OUT
 	if [[ $HELM_EXIT_CODE != 0 ]]; then
-		false
+		if echo $HELM_OUT | grep -q "Error: uninstall: Release not loaded:.*: release: not found"; then
+			echo Error: uninstall: Release not loaded: arised, probably there was no chart installed, and it is ok, ignoring
+			true
+		else
+			false
+		fi
 	fi
 }
 
