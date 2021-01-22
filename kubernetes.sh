@@ -177,6 +177,9 @@ function helm_deploy () {
 		if echo $HELM_OUT | grep -q "Error: release: already exists"; then
 			echo Error: release: already exists arised, probably it was created by parallel job, and it is ok, ignoring
 			true
+		elif echo $HELM_OUT | grep -q "Error: UPGRADE FAILED: another operation.*is in progress"; then
+			sleep 30
+			helm_deploy "$1" "$2" "$3"
 		else
 			false
 		fi
@@ -192,6 +195,9 @@ function helm_deploy_from_dir () {
 		if echo $HELM_OUT | grep -q "Error: release: already exists"; then
 			echo Error: release: already exists arised, probably it was created by parallel job, and it is ok, ignoring
 			true
+		elif echo $HELM_OUT | grep -q "Error: UPGRADE FAILED: another operation.*is in progress"; then
+			sleep 30
+			helm_deploy_from_dir "$1" "$2" "$3" "$4"
 		else
 			false
 		fi
@@ -207,6 +213,9 @@ function helm_deploy_by_name_with_config () {
 		if echo $HELM_OUT | grep -q "Error: release: already exists"; then
 			echo Error: release: already exists arised, probably it was created by parallel job, and it is ok, ignoring
 			true
+		elif echo $HELM_OUT | grep -q "Error: UPGRADE FAILED: another operation.*is in progress"; then
+			sleep 30
+			helm_deploy_by_name_with_config "$1" "$2" "$3"
 		else
 			false
 		fi
