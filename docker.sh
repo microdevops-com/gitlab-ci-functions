@@ -5,7 +5,8 @@
 export DOCKER_CONFIG=$PWD/.docker
 
 function registry_login {
-	docker login -u "$CI_REGISTRY_USER" -p "$CI_JOB_TOKEN" "$CI_REGISTRY"
+	echo DOCKER: login into regisrty $1
+	echo $3 | docker login --username $2 --password-stdin $1
 }
 
 function docker_build_dir () {
