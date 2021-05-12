@@ -8,6 +8,11 @@ function registry_login {
 	docker login -u "$CI_REGISTRY_USER" -p "$CI_JOB_TOKEN" "$CI_REGISTRY"
 }
 
+function registry_param_login {
+	echo DOCKER: login into regisrty $1
+	echo $3 | docker login --username $2 --password-stdin $1
+}
+
 function docker_build_dir () {
 	if [ -z "$3" ]; then
 		echo CMD: docker build --pull -t $1 .
