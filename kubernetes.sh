@@ -1,6 +1,5 @@
 #!/bin/bash
 
-KUBECTL="kubectl --server=$KUBE_SERVER --token=$KUBE_TOKEN"
 # rancher cli v.2.4.10+ that has --config for parallel jobs, previous could be used with HOME var substitution
 RANCHER_CLI_CHECK_OUT=$(rancher --config 2>&1 || true)
 if echo $RANCHER_CLI_CHECK_OUT | grep -q "flag needs an argument"; then
@@ -9,6 +8,7 @@ else
 	# eval is needed because running VAR=val cmd within pipelines tries to run VAR=val as separate command
 	RANCHER="eval HOME=$PWD rancher"
 fi
+KUBECTL="$RANCHER kubectl"
 # make cluster.yml parallel jobs safe
 HELM="helm --kubeconfig $PWD/.helm/cluster.yml"
 
