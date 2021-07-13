@@ -206,7 +206,7 @@ function helm_deploy_from_dir () {
 
 function helm_deploy_by_name_with_config () {
 	# do not prefix OUT vars with local or exit code will be wrong
-	HELM_OUT=$($HELM upgrade --wait --wait-for-jobs --namespace $KUBE_NAMESPACE --install $1 -f $3 $2 2>&1) && HELM_EXIT_CODE=0 || HELM_EXIT_CODE=1
+	HELM_OUT=$($HELM upgrade --wait --wait-for-jobs --namespace $KUBE_NAMESPACE --install $1 -f $3 $2 $4 2>&1) && HELM_EXIT_CODE=0 || HELM_EXIT_CODE=1
 	echo Helm exit code: $HELM_EXIT_CODE
 	echo $HELM_OUT
 	if [[ $HELM_EXIT_CODE != 0 ]]; then
@@ -215,7 +215,7 @@ function helm_deploy_by_name_with_config () {
 			true
 		elif echo $HELM_OUT | grep -q "Error: UPGRADE FAILED: another operation.*is in progress"; then
 			sleep 30
-			helm_deploy_by_name_with_config "$1" "$2" "$3"
+			helm_deploy_by_name_with_config "$1" "$2" "$3" "$4"
 		else
 			false
 		fi
