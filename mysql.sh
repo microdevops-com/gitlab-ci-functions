@@ -142,7 +142,7 @@ function mysql_copy_table_to_local () {
 	local TABLE_NAME="$2"
 	local OPTIONS="$3"
 	echo CMD: Copy table ${TABLE_NAME} with options ${OPTIONS}
-	mysqldump -alv \
+	mysqldump --single-transaction -alv \
 	-h ${SYNC_MYSQL_STAGE_HOST} -u ${SYNC_MYSQL_STAGE_USER} -p${SYNC_MYSQL_STAGE_PASS} \
 	--databases "${DB_NAME}" --tables "${TABLE_NAME}" --where="${OPTIONS}" 2> /dev/stderr | mysql \
 	-h ${SYNC_MYSQL_LOCAL_HOST} -u ${SYNC_MYSQL_LOCAL_USER} -p${SYNC_MYSQL_LOCAL_PASS} \
