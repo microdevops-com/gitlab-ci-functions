@@ -30,9 +30,7 @@ function rancher_login {
 }
 
 function rancher_login_project {
-	local RANCHER_PROJECT_NAME="$RANCHER_PROJECT"
-	local RANCHER_PROJECT_ID=$(echo "" | $RANCHER login --token "$KUBE_TOKEN" "$KUBE_SERVER" 2>/dev/null | grep -E "local\:p-[[:alnum:]]+[[:space:]]+${RANCHER_PROJECT_NAME}" | awk '{print $3}')
-	$RANCHER login --token "$KUBE_TOKEN" --context "$RANCHER_PROJECT_ID" "$KUBE_SERVER"
+	$RANCHER login "$KUBE_SERVER" --token "$KUBE_TOKEN" --context "$KUBE_CLUSTER:$KUBE_PROJECT"
 }
 
 function rancher_logout {
@@ -104,7 +102,7 @@ function namespace_secret_acme_cert () {
 	else
 		echo "Domain verified - OK"
 	fi
-	$KUBECTL -n $KUBE_NAMESPACE create secret tls $1 \
+	$KUBECTL -n $KUBE_NAMESPACE create secret tls ${SECRET_NAME} \
 		--key=/opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_key.key \
 		--cert=/opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_fullchain.cer \
 		-o yaml --dry-run | $KUBECTL -n $KUBE_NAMESPACE replace --force -f -
@@ -112,28 +110,7 @@ function namespace_secret_acme_cert () {
 
 function helm_cluster_login {
 	mkdir -p $PWD/.helm
-	cat <<- EOF > $PWD/.helm/cluster.yml
-	apiVersion: v1
-	kind: Config
-	clusters:
-	- name: "remote-cluster"
-	  cluster:
-	    server: "$KUBE_SERVER"
-	    api-version: v1
-
-	users:
-	- name: "user-gvnrn"
-	  user:
-	    token: "$KUBE_TOKEN"
-
-	contexts:
-	- name: "remote-cluster"
-	  context:
-	    user: "user-gvnrn"
-	    cluster: "remote-cluster"
-
-	current-context: "remote-cluster"	
-	EOF
+	rancher cluster kubeconfig ${KUBE_CLUSTER}> $PWD/.helm/cluster.yml
 	chmod 600 $PWD/.helm/cluster.yml
 }
 
