@@ -110,7 +110,7 @@ function namespace_secret_acme_cert () {
 
 function helm_cluster_login {
 	mkdir -p $PWD/.helm
-	rancher cluster kubeconfig ${KUBE_CLUSTER}> $PWD/.helm/cluster.yml
+	$RANCHER cluster kubeconfig ${KUBE_CLUSTER}> $PWD/.helm/cluster.yml
 	chmod 600 $PWD/.helm/cluster.yml
 }
 
