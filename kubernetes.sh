@@ -26,11 +26,19 @@ function kubectl_namespace {
 }
 
 function rancher_login {
-	$RANCHER login --token "$KUBE_TOKEN" "$KUBE_SERVER"
+  if [ -z "$RANCHER_SERVER" ] && [ -z "$RANCHER_TOKEN" ] ; then
+    $RANCHER login --token "$RANCHER_TOKEN" "$RANCHER_SERVER"
+	else
+	  $RANCHER login --token "$KUBE_TOKEN" "$KUBE_SERVER"
+  fi
 }
 
 function rancher_login_project {
-	$RANCHER login "$KUBE_SERVER" --token "$KUBE_TOKEN" --context "$KUBE_CLUSTER:$KUBE_PROJECT"
+  if [ -z "$RANCHER_SERVER" ] && [ -z "$RANCHER_TOKEN" ] ; then
+    $RANCHER login "$RANCHER_SERVER" --token "$RANCHER_TOKEN" --context "$RANCHER_CLUSTER_ID:$RANCHER_PROJECT_ID"
+	else
+	  $RANCHER login "$KUBE_SERVER" --token "$KUBE_TOKEN" --context "$KUBE_CLUSTER:$KUBE_PROJECT"
+  fi
 }
 
 function rancher_logout {
@@ -110,7 +118,14 @@ function namespace_secret_acme_cert () {
 
 function helm_cluster_login {
 	mkdir -p $PWD/.helm
-	$RANCHER cluster kubeconfig ${KUBE_CLUSTER}> $PWD/.helm/cluster.yml
+	if [ -z "$RANCHER_SERVER" ] && [ -z "$RANCHER_TOKEN" ] ; then
+    $RANCHER cluster kubeconfig ${RANCHER_CLUSTER_ID}> $PWD/.helm/cluster.yml
+	else
+    KUBECONFIG=$PWD/.helm/cluster.yml kubectl config set-cluster remote-cluster --server=$KUBE_SERVER
+    KUBECONFIG=$PWD/.helm/cluster.yml kubectl config set-credentials user-gvnrn --token=$KUBE_TOKEN
+    KUBECONFIG=$PWD/.helm/cluster.yml kubectl config set-context remote-cluster --user=user-gvnrn --cluster=remote-cluster
+    KUBECONFIG=$PWD/.helm/cluster.yml kubectl config use-context remote-cluster
+	fi
 	chmod 600 $PWD/.helm/cluster.yml
 }
 
