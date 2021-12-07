@@ -45,6 +45,7 @@ function ssh_copy_from_docker () {
 	if [ -z "$DEPLOY_EXCLUDE" ]; then
 		ssh -o Port=${SSH_PORT} -o BatchMode=yes -o StrictHostKeyChecking=no root@${DEPLOY_SERVER} 'DOCKER_TMP_DIR=$(mktemp -d -t docker.XXXXXXXXXX); DEPLOY_TMP_CONTAINER=$(docker create '${DEPLOY_IMAGE}'); docker export ${DEPLOY_TMP_CONTAINER} | tar -C ${DOCKER_TMP_DIR} --strip-components='${DEPLOY_STRIP}' -xf - '${DEPLOY_SOURCE}'; rsync -a --delete ${DOCKER_TMP_DIR}/ '${DEPLOY_TARGET}'/; chmod 755 '${DEPLOY_TARGET}'; docker rm ${DEPLOY_TMP_CONTAINER}; rm -rf ${DOCKER_TMP_DIR}'
 	else
-		ssh -o Port=${SSH_PORT} -o BatchMode=yes -o StrictHostKeyChecking=no root@${DEPLOY_SERVER} 'DOCKER_TMP_DIR=$(mktemp -d -t docker.XXXXXXXXXX); DEPLOY_TMP_CONTAINER=$(docker create '${DEPLOY_IMAGE}'); docker export ${DEPLOY_TMP_CONTAINER} | tar -C ${DOCKER_TMP_DIR} --strip-components='${DEPLOY_STRIP}' -xf - '${DEPLOY_SOURCE}'; rsync -a --delete --exclude '${DEPLOY_EXCLUDE}' ${DOCKER_TMP_DIR}/ '${DEPLOY_TARGET}'/; chmod 755 '${DEPLOY_TARGET}'; docker rm ${DEPLOY_TMP_CONTAINER}; rm -rf ${DOCKER_TMP_DIR}'
+		printf -v DEPLOY_EXCLUDE '\x2D\x2Dexclude %s ' ${DEPLOY_EXCLUDE[@]}
+		ssh -o Port=${SSH_PORT} -o BatchMode=yes -o StrictHostKeyChecking=no root@${DEPLOY_SERVER} 'DOCKER_TMP_DIR=$(mktemp -d -t docker.XXXXXXXXXX); DEPLOY_TMP_CONTAINER=$(docker create '${DEPLOY_IMAGE}'); docker export ${DEPLOY_TMP_CONTAINER} | tar -C ${DOCKER_TMP_DIR} --strip-components='${DEPLOY_STRIP}' -xf - '${DEPLOY_SOURCE}'; rsync -a --delete '${DEPLOY_EXCLUDE}' ${DOCKER_TMP_DIR}/ '${DEPLOY_TARGET}'/; chmod 755 '${DEPLOY_TARGET}'; docker rm ${DEPLOY_TMP_CONTAINER}; rm -rf ${DOCKER_TMP_DIR}'
 	fi
 }
