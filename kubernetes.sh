@@ -1,16 +1,45 @@
 #!/bin/bash
 
-# rancher cli v.2.4.10+ that has --config for parallel jobs, previous could be used with HOME var substitution
-RANCHER_CLI_CHECK_OUT=$(rancher --config 2>&1 || true)
-if echo $RANCHER_CLI_CHECK_OUT | grep -q "flag needs an argument"; then
-	RANCHER="rancher --config $PWD/.rancher"
+if [[ ${KUBE_MODE:=rancher} == "rancher" ]]; then
+  . rancher.sh
 else
-	# eval is needed because running VAR=val cmd within pipelines tries to run VAR=val as separate command
-	RANCHER="eval HOME=$PWD rancher"
+  KUBECTL="kubectl --v=${KUBECTL_VERBOSE_LEVEL:-0} --kubeconfig ${PWD}/.kube/config.yml"
+  HELM="helm --kubeconfig ${PWD}/.kube/config.yml"
+
+  function kube_cluster_login {
+    mkdir -p ${PWD}/.kube/
+    touch ${PWD}/.kube/config.yml
+    chmod 0600 ${PWD}/.kube/config.yml
+
+    if [[ ${KUBE_AUTH_TYPE} == "basic" ]]; then
+      ${KUBECTL} config set-cluster remote-cluster --server=${KUBE_SERVER}
+      ${KUBECTL} config set-credentials ${KUBE_AUTH_USER} --password="${KUBE_AUTH_PASSWORD}".
+
+    elif [[ ${KUBE_AUTH_TYPE} == "cert" ]]; then
+      echo ${KUBE_AUTH_CERTIFICATE_AUTHORITY} | base64 --decode > ${PWD}/.kube/certificate-authority.crt
+      echo ${KUBE_AUTH_CLIENT_CERTIFICATE} | base64 --decode > ${PWD}/.kube/client-certificate.crt
+      echo ${KUBE_AUTH_CLIENT_KEY} | base64 --decode > ${PWD}/.kube/client-key.crt
+
+      ${KUBECTL} config set-cluster remote-cluster --server=${KUBE_SERVER} --certificate-authority=${PWD}/.kube/certificate-authority.crt
+      ${KUBECTL} config set-credentials ${KUBE_AUTH_USER} --client-certificate=${PWD}/.kube/client-certificate.crt --client-key=${PWD}/.kube/client-key.crt
+
+    elif [[ ${KUBE_AUTH_TYPE} == "token" ]]; then
+      ${KUBECTL} config set-cluster remote-cluster --server=${KUBE_SERVER}
+      ${KUBECTL} config set-credentials ${KUBE_AUTH_USER} --token="${KUBE_AUTH_TOKEN}"
+
+    fi
+
+    ${KUBECTL} config set-context ${KUBE_AUTH_USER}-context --cluster=remote-cluster --user=${KUBE_AUTH_USER}
+    ${KUBECTL} config use-context ${KUBE_AUTH_USER}-context
+
+  }
+
+  function kube_cluster_logout {
+    rm -rvf ${PWD}/.kube/*
+  }
 fi
-KUBECTL="$RANCHER kubectl"
-# make cluster.yml parallel jobs safe
-HELM="helm --kubeconfig $PWD/.helm/cluster.yml"
+
+
 
 function kubernetes_namespace_sanitize () {
 	if [ -z "$2" ]; then
@@ -26,47 +55,6 @@ function kubectl_namespace {
   if [[ ${KUBE_RANCHER_NAMESPACE} == "true" ]]; then
     ${KUBECTL} annotate namespace ${KUBE_NAMESPACE} field.cattle.io/projectId="${KUBE_RANCHER_CLUSTER_ID}:${KUBE_RANCHER_PROJECT_ID}" --overwrite=true
   fi
-}
-
-function rancher_login {
-  if [ -z "$RANCHER_SERVER" ] && [ -z "$RANCHER_TOKEN" ] ; then
-    $RANCHER login --token "$KUBE_TOKEN" "$KUBE_SERVER"
-  else
-    $RANCHER login --token "$RANCHER_TOKEN" "$RANCHER_SERVER"
-  fi
-}
-
-function rancher_login_project {
-  if [ -z "$RANCHER_SERVER" ] && [ -z "$RANCHER_TOKEN" ] ; then
-    # Deprecated logic
-    local RANCHER_PROJECT_NAME="$RANCHER_PROJECT"
-    local RANCHER_PROJECT_ID=$(echo "" | $RANCHER login --token "$KUBE_TOKEN" "$KUBE_SERVER" 2>/dev/null | grep -E "local\:p-[[:alnum:]]+[[:space:]]+${RANCHER_PROJECT_NAME}" | awk '{print $3}')
-    $RANCHER login --token "$KUBE_TOKEN" --context "$RANCHER_PROJECT_ID" "$KUBE_SERVER"
-  else
-    $RANCHER login "$RANCHER_SERVER" --token "$RANCHER_TOKEN" --context "$RANCHER_CLUSTER_ID:$RANCHER_PROJECT_ID"
-  fi
-}
-
-function rancher_logout {
-	rm -f $PWD/.rancher/cli2.json
-}
-
-function rancher_namespace {
-	echo "KUBE_NAMESPACE: $KUBE_NAMESPACE"
-	# do not prefix OUT vars with local or exit code will be wrong
-	$RANCHER namespace | grep -q "$KUBE_NAMESPACE\s*$KUBE_NAMESPACE" || {
-		RANCHER_OUT=$($RANCHER namespace create "$KUBE_NAMESPACE" 2>&1) && RANCHER_EXIT_CODE=0 || RANCHER_EXIT_CODE=1
-		echo Rancher exit code: $RANCHER_EXIT_CODE
-		echo $RANCHER_OUT
-		if [[ $RANCHER_EXIT_CODE != 0 ]]; then
-			if echo $RANCHER_OUT | grep -q "code=AlreadyExists"; then
-				echo Error code=AlreadyExists arised, probably it was created by parallel job, and it is ok, ignoring
-				true
-			else
-				false
-			fi
-		fi
-	}
 }
 
 function namespace_secret_project_registry {
@@ -120,24 +108,6 @@ function namespace_secret_acme_cert () {
 		--key=/opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_key.key \
 		--cert=/opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_fullchain.cer \
 		-o yaml --dry-run | $KUBECTL -n $KUBE_NAMESPACE replace --force -f -
-}
-
-function helm_cluster_login {
-  mkdir -p $PWD/.helm
-  if [ -z "$RANCHER_SERVER" ] && [ -z "$RANCHER_TOKEN" ] ; then
-    KUBECONFIG=$PWD/.helm/cluster.yml kubectl config set-cluster remote-cluster --server=$KUBE_SERVER
-    KUBECONFIG=$PWD/.helm/cluster.yml kubectl config set-credentials user-gvnrn --token=$KUBE_TOKEN
-    KUBECONFIG=$PWD/.helm/cluster.yml kubectl config set-context remote-cluster --user=user-gvnrn --cluster=remote-cluster
-    KUBECONFIG=$PWD/.helm/cluster.yml kubectl config use-context remote-cluster
-  else
-    $RANCHER cluster kubeconfig ${RANCHER_CLUSTER_ID}> $PWD/.helm/cluster.yml
-  fi
-  chmod 600 $PWD/.helm/cluster.yml
-}
-
-# We shouldn't leave credentials in the workspace as they may change
-function helm_cluster_logout {
-	rm -f $PWD/.helm/cluster.yml
 }
 
 function helm_init_namespace {
@@ -241,7 +211,7 @@ function kubectl_wait_for_deployment_and_exec_in_container_of_first_running_pod 
 		echo "ERROR: Deployment rollout timeout"
 		exit 1
 	fi
-	local POD=$($KUBECTL -n $KUBE_NAMESPACE get pods --selector=app.kubernetes.io/name=${DEPLOYMENT} | grep "Running"  | head -n 1 | awk '{print $1}')
+	local POD=$(${KUBECTL} -n $KUBE_NAMESPACE get pods --selector=app.kubernetes.io/name=${DEPLOYMENT} | grep "Running"  | head -n 1 | awk '{print $1}')
 	echo "POD: ${POD}"
 	$KUBECTL -n $KUBE_NAMESPACE exec $POD -c $CONTAINER -- $COMMAND
 }
@@ -281,14 +251,6 @@ function kubectl_cp_container_of_first_running_pod () {
 	$KUBECTL cp -c $CONTAINER $KUBE_NAMESPACE/$POD:$DIR_FROM $DIR_TO
 }
 
-# Deprecated
-function rancher_lock {
-	echo "NOTICE: rancher cli is parallel jobs safe now, you can safely remove rancher_lock/rancher_unlock calls"
-}
-
-function rancher_unlock {
-	echo "NOTICE: rancher cli is parallel jobs safe now, you can safely remove rancher_lock/rancher_unlock calls"
-}
 
 function helm_lock {
 	echo "NOTICE: Helm is parallel jobs safe now, you can safely remove helm_lock/helm_unlock calls"
