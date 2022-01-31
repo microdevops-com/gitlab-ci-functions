@@ -24,7 +24,7 @@ function kubernetes_namespace_sanitize () {
 function kubectl_namespace {
   ${KUBECTL} create namespace ${KUBE_NAMESPACE} --dry-run=client -o yaml | ${KUBECTL} apply -f -
   if [[ ${KUBE_RANCHER_NAMESPACE} == "true" ]]; then
-    ${KUBECTL} annotate namespace "$KUBE_NAMESPACE" field.cattle.io/projectId="${KUBE_RANCHER_CLUSTER_ID}:${KUBE_RANCHER_PROJECT_ID}" --overwrite=true
+    ${KUBECTL} annotate namespace ${KUBE_NAMESPACE} field.cattle.io/projectId="${KUBE_RANCHER_CLUSTER_ID}:${KUBE_RANCHER_PROJECT_ID}" --overwrite=true
   fi
 }
 
