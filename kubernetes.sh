@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ ${KUBE_MODE:=rancher} == "rancher" ]]; then
-  . rancher.sh
+  . .gitlab-ci-functions/rancher.sh
 else
   KUBECTL="kubectl --v=${KUBECTL_VERBOSE_LEVEL:-0} --kubeconfig ${PWD}/.kube/config.yml"
   HELM="helm --kubeconfig ${PWD}/.kube/config.yml"
