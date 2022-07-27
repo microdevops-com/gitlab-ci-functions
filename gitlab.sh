@@ -54,6 +54,10 @@ function gitlab_trigger_pipeline_and_wait_success () {
 		if [[ "_${PIPELINE_STATUS}" = "_running" ]]; then
 			continue
 		fi
+		if [[ "_${PIPELINE_STATUS}" = "_created" ]]; then
+			continue
+		fi
+		
 		# All other statuses or anything else - error
 		echo "ERROR: status($PIPELINE_STATUS) is unknown to wait any longer"
 		exit 1
