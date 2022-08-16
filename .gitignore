@@ -10,3 +10,5 @@ Session.vim
 *~
 # PyCharm
 .idea/
+
+tests/.env.test.*
