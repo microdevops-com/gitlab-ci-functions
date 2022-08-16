@@ -91,15 +91,15 @@ function namespace_secret_acme_cert () {
     local ACME_DIR="${HOME}/.acme"
 
     if [[ ${ACME_ACCOUNT} == "cloudflare" ]]; then
-      local ACME_CLOUDFLARE_REGISTER_ACCOUNT_LOCK="${ACME_DIR}/.cf-register-account"
-      if [[ ! -d ${ACME_CLOUDFLARE_REGISTER_ACCOUNT_LOCK}  ]]; then
+
+      if [[ ! -d "${ACME_DIR}/.cf-register-account"  ]]; then
         docker run --rm -t \
           -v "${ACME_DIR}":/acme.sh \
           -e CF_Email="${ACME_CLOUDFLARE_AUTH_EMAIL}" \
           -e CF_Key="${ACME_CLOUDFLARE_AUTH_KEY}" \
           neilpang/acme.sh:${ACME_DOCKER_VERSION:=latest} \
           --register-account -m "${ACME_CLOUDFLARE_AUTH_EMAIL}"
-        mkdir -p "${ACME_CLOUDFLARE_REGISTER_ACCOUNT_LOCK}"
+        docker run --rm -t -v "${ACME_DIR}":/acme.sh alpine mkdir -pv "/acme.sh/.cf-register-account"
       fi
         local ACME_EXIT_CODE
         docker run --rm  -t  \
@@ -107,14 +107,14 @@ function namespace_secret_acme_cert () {
           -e CF_Email="${ACME_CLOUDFLARE_AUTH_EMAIL}" \
           -e CF_Key="${ACME_CLOUDFLARE_AUTH_KEY}" \
           neilpang/acme.sh:${ACME_DOCKER_VERSION:=latest} \
-          --renew --domain "${DNS_DOMAIN}" \
+          --issue --domain "${DNS_DOMAIN}" \
           "${ACME_DOCKER_CLI_ARGS:=}" \
           --dns dns_cf || ACME_EXIT_CODE=$?
         echo ACME exit code: $ACME_EXIT_CODE
+
         if [[ ${ACME_EXIT_CODE} != 2 ]] && [[ ${ACME_EXIT_CODE} != 0 ]]; then
           exit $ACME_EXIT_CODE;
         fi
-
 
     elif [[ ${ACME_ACCOUNT} == "clouddns" ]]; then
         local ACME_EXIT_CODE
@@ -127,6 +127,7 @@ function namespace_secret_acme_cert () {
           ${ACME_DOCKER_CLI_ARGS:=} \
           --dns dns_cloudns  || ACME_EXIT_CODE=$?
         echo ACME exit code: $ACME_EXIT_CODE
+
         if [[ ${ACME_EXIT_CODE} != 2 ]] && [[ ${ACME_EXIT_CODE} != 0 ]]; then
           exit $ACME_EXIT_CODE;
         fi
