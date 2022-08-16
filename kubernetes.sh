@@ -108,7 +108,7 @@ function namespace_secret_acme_cert () {
           -e CF_Key="${ACME_CLOUDFLARE_AUTH_KEY}" \
           neilpang/acme.sh:${ACME_DOCKER_VERSION:=latest} \
           --issue --domain "${DNS_DOMAIN}" \
-          "${ACME_DOCKER_CLI_ARGS:=}" \
+          ${ACME_DOCKER_CLI_ARGS:=} \
           --dns dns_cf || ACME_EXIT_CODE=$?
         echo ACME exit code: $ACME_EXIT_CODE
 
