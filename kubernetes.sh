@@ -72,42 +72,96 @@ function namespace_secret_project_registry {
 	fi
 	$KUBECTL -n $KUBE_NAMESPACE create secret docker-registry docker-registry-${CI_PROJECT_PATH_SLUG} \
 		--docker-server=${CI_REGISTRY} --docker-username=${CI_DEPLOY_USER} --docker-password=${CI_DEPLOY_PASSWORD} --docker-email=${ADMIN_EMAIL} \
-		-o yaml --dry-run | $KUBECTL -n $KUBE_NAMESPACE replace --force -f -
+		-o yaml --dry-run=client | $KUBECTL -n $KUBE_NAMESPACE replace --force -f -
 }
 
 function namespace_secret_additional_project_registry () {
 	local SAFE_REGISTRY_NAME=$(echo $1 | tr "[:upper:]" "[:lower:]" | sed "s/[^a-zA-Z0-9-]/-/g" | sed "s/-$//g" | tr -d '\n' | tr -d '\r')
 	$KUBECTL -n $KUBE_NAMESPACE create secret docker-registry docker-registry-${SAFE_REGISTRY_NAME} \
 		--docker-server=${CI_REGISTRY} --docker-username=$2 --docker-password=$3 --docker-email=${ADMIN_EMAIL} \
-		-o yaml --dry-run | $KUBECTL -n $KUBE_NAMESPACE replace --force -f -
+		-o yaml --dry-run=client | $KUBECTL -n $KUBE_NAMESPACE replace --force -f -
 }
 
 function namespace_secret_acme_cert () {
-	local SECRET_NAME="$1"
-	local DNS_DOMAIN="$2"
-	local DNS_SAFE_DOMAIN=$(echo "$2" | sed "s/*/./g")
-	echo "Domain: ${DNS_DOMAIN}"
-	echo "Safe Domain: ${DNS_SAFE_DOMAIN}"
-	local OPENSSL_RESULT=$(openssl verify -CAfile /opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_ca.cer /opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_fullchain.cer 2>&1 || true)
-	echo "OpenSSL cert:"
-	echo $OPENSSL_RESULT
-	echo "---"
-	( echo $OPENSSL_RESULT | grep -i -e error ) || true
-	echo "---"
-	if echo $OPENSSL_RESULT | grep -q -i -e error; then
-		/opt/acme/home/acme_local.sh \
-			--cert-file /opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_cert.cer \
-			--key-file /opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_key.key \
-			--ca-file /opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_ca.cer \
-			--fullchain-file /opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_fullchain.cer \
-			--issue -d "${DNS_DOMAIN}"
-	else
-		echo "Domain verified - OK"
-	fi
-	$KUBECTL -n $KUBE_NAMESPACE create secret tls ${SECRET_NAME} \
-		--key=/opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_key.key \
-		--cert=/opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_fullchain.cer \
-		-o yaml --dry-run | $KUBECTL -n $KUBE_NAMESPACE replace --force -f -
+  local SECRET_NAME="$1"
+  local DNS_DOMAIN="$2"
+  echo "Domain: ${DNS_DOMAIN}"
+
+  if [[ ${ACME_MODE:=legacy} == "docker" ]]; then
+    local ACME_DIR="${HOME}/.acme"
+
+    if [[ ${ACME_ACCOUNT} == "cloudflare" ]]; then
+      local ACME_CLOUDFLARE_REGISTER_ACCOUNT_LOCK="${ACME_DIR}/.cf-register-account"
+      if [[ ! -d ${ACME_CLOUDFLARE_REGISTER_ACCOUNT_LOCK}  ]]; then
+        docker run --rm -t \
+          -v "${ACME_DIR}":/acme.sh \
+          -e CF_Email="${ACME_CLOUDFLARE_AUTH_EMAIL}" \
+          -e CF_Key="${ACME_CLOUDFLARE_AUTH_KEY}" \
+          neilpang/acme.sh:${ACME_DOCKER_VERSION:=latest} \
+          --register-account -m "${ACME_CLOUDFLARE_AUTH_EMAIL}"
+        mkdir -p "${ACME_CLOUDFLARE_REGISTER_ACCOUNT_LOCK}"
+      fi
+        local ACME_EXIT_CODE
+        docker run --rm  -t  \
+          -v "${ACME_DIR}":/acme.sh \
+          -e CF_Email="${ACME_CLOUDFLARE_AUTH_EMAIL}" \
+          -e CF_Key="${ACME_CLOUDFLARE_AUTH_KEY}" \
+          neilpang/acme.sh:${ACME_DOCKER_VERSION:=latest} \
+          --renew --domain "${DNS_DOMAIN}" \
+          "${ACME_DOCKER_CLI_ARGS:=}" \
+          --dns dns_cf || ACME_EXIT_CODE=$?
+        echo ACME exit code: $ACME_EXIT_CODE
+        if [[ ${ACME_EXIT_CODE} != 2 ]] && [[ ${ACME_EXIT_CODE} != 0 ]]; then
+          exit $ACME_EXIT_CODE;
+        fi
+
+
+    elif [[ ${ACME_ACCOUNT} == "clouddns" ]]; then
+        local ACME_EXIT_CODE
+        docker run --rm  -t  \
+          -v "${ACME_DIR}":/acme.sh \
+          -e CLOUDNS_AUTH_ID="${ACME_CLOUDNS_AUTH_ID}" \
+          -e CLOUDNS_AUTH_PASSWORD="${ACME_CLOUDNS_AUTH_PASSWORD}" \
+          neilpang/acme.sh:${ACME_DOCKER_VERSION:=latest} \
+          --issue --domain "${DNS_DOMAIN}" \
+          ${ACME_DOCKER_CLI_ARGS:=} \
+          --dns dns_cloudns  || ACME_EXIT_CODE=$?
+        echo ACME exit code: $ACME_EXIT_CODE
+        if [[ ${ACME_EXIT_CODE} != 2 ]] && [[ ${ACME_EXIT_CODE} != 0 ]]; then
+          exit $ACME_EXIT_CODE;
+        fi
+
+    else
+      echo "ACME_ACCOUNT not supported: ${ACME_ACCOUNT}"
+    fi
+    ${KUBECTL} -n ${KUBE_NAMESPACE} create secret tls ${SECRET_NAME} \
+    --key=${ACME_DIR}/${DNS_DOMAIN}/${DNS_DOMAIN}.key \
+    --cert=${ACME_DIR}/${DNS_DOMAIN}/fullchain.cer \
+    -o yaml --dry-run=client | ${KUBECTL} -n ${KUBE_NAMESPACE} replace --force -f -
+  else
+    local DNS_SAFE_DOMAIN=$(echo "$2" | sed "s/*/./g")
+    echo "Safe Domain: ${DNS_SAFE_DOMAIN}"
+    local OPENSSL_RESULT=$(openssl verify -CAfile /opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_ca.cer /opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_fullchain.cer 2>&1 || true)
+    echo "OpenSSL cert:"
+    echo $OPENSSL_RESULT
+    echo "---"
+    ( echo $OPENSSL_RESULT | grep -i -e error ) || true
+    echo "---"
+    if echo $OPENSSL_RESULT | grep -q -i -e error; then
+      /opt/acme/home/acme_local.sh \
+        --cert-file /opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_cert.cer \
+        --key-file /opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_key.key \
+        --ca-file /opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_ca.cer \
+        --fullchain-file /opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_fullchain.cer \
+        --issue -d "${DNS_DOMAIN}"
+    else
+      echo "Domain verified - OK"
+    fi
+    ${KUBECTL} -n ${KUBE_NAMESPACE} create secret tls ${SECRET_NAME} \
+      --key=/opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_key.key \
+      --cert=/opt/acme/cert/domain_${DNS_SAFE_DOMAIN}_fullchain.cer \
+      -o yaml --dry-run=client | ${KUBECTL} -n ${KUBE_NAMESPACE} replace --force -f -
+  fi
 }
 
 function helm_init_namespace {
