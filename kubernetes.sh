@@ -135,6 +135,7 @@ function namespace_secret_acme_cert () {
     else
       echo "ACME_ACCOUNT not supported: ${ACME_ACCOUNT}"
     fi
+    docker run --rm  -t -v "${ACME_DIR}":/acme alpine /bin/sh -c "chown -R $(id -u):$(id -g) /acme"
     ${KUBECTL} -n ${KUBE_NAMESPACE} create secret tls ${SECRET_NAME} \
     --key=${ACME_DIR}/${DNS_DOMAIN}/${DNS_DOMAIN}.key \
     --cert=${ACME_DIR}/${DNS_DOMAIN}/fullchain.cer \
