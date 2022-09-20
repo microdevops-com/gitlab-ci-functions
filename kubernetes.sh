@@ -6,7 +6,7 @@ else
   KUBECTL="kubectl --v=${KUBECTL_VERBOSE_LEVEL:-0} --kubeconfig ${PWD}/.kube/config.yml"
   HELM="helm --kubeconfig ${PWD}/.kube/config.yml"
 
-  function kube_cluster_login {
+  function kube_cluster_login {	
     mkdir -p ${PWD}/.kube/
     touch ${PWD}/.kube/config.yml
     chmod 0600 ${PWD}/.kube/config.yml
@@ -39,7 +39,7 @@ else
   }
 fi
 
-
+. logger.sh
 
 function kubernetes_namespace_sanitize () {
 	if [ -z "$2" ]; then
