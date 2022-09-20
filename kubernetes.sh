@@ -315,3 +315,139 @@ function helm_lock {
 function helm_unlock {
 	echo "NOTICE: Helm is parallel jobs safe now, you can safely remove helm_lock/helm_unlock calls"
 }
+
+watching_pods_containers_logs_file=$(mktemp /dev/shm/helm-upgrade-logs.watching-pods-containers-logs.XXXXXX)
+watching_pods_events_file=$(mktemp /dev/shm/helm-upgrade-logs.watching-pods-events.XXXXXX)
+
+function kubectl_cleanup() {
+  echo "kubectl cleanup"
+  rm -fv "${watching_pods_containers_logs_file}" "${watching_pods_events_file}" || true
+  jobs -pr | xargs -r kill
+}
+
+trap kubectl_cleanup EXIT
+
+
+function kubectl_watch_pods() {
+  local release="$1"
+
+  sleep 3 # Prevent flodding the logs with the initial output
+  log_command kubectl get pods --namespace ${KUBE_NAMESPACE} --watch --selector "app.kubernetes.io/instance=${release}"
+  log_prefix_output "pods" "1;32" ${KUBECTL} get pods \
+    --namespace ${KUBE_NAMESPACE} \
+    --watch \
+    --selector "app.kubernetes.io/instance=${release}"
+}
+
+function kubectl_watch_pod_logs() {
+  local pod="$1"
+  local container=`echo $2 | tr -d '"'`
+
+  if grep -q "^${pod}-${container}" "${watching_pods_containers_logs_file}"; then
+    return
+  fi
+
+  echo "${pod}-${container}" >>"${watching_pods_containers_logs_file}"
+
+  log_command kubectl logs --namespace ${KUBE_NAMESPACE} --container ${container} --follow "${pod}"
+  # pod ${pod} logs
+  log_prefix_output "logs ${pod} [${container}]" "0;34" ${KUBECTL} logs \
+    --namespace ${KUBE_NAMESPACE} \
+    --container ${container} \
+    --follow \
+    "${pod}"  || true
+
+  # remove from watch list (it may be added again)
+  sed -i "/^${pod}-${container}$/d" "${watching_pods_containers_logs_file}"
+}
+
+function kubectl_watch_pod_events() {
+  local pod="$1"
+
+  if grep -q "^${pod}$" "${watching_pods_events_file}"; then
+    return
+  fi
+
+  echo "${pod}" >>"${watching_pods_events_file}"
+
+  log_command kubectl get events  --namespace ${KUBE_NAMESPACE} --watch-only --field-selector involvedObject.name="${pod}"
+  log_prefix_output "pod ${pod} events" "0;35" ${KUBECTL} get events \
+    --namespace ${KUBE_NAMESPACE} \
+    --watch-only \
+    --field-selector involvedObject.name="${pod}" || true
+
+  # remove from watch list (it may be added again)
+  sed -i "/^${pod}$/d" "${watching_pods_events_file}"
+}
+
+function kubectl_watch_pods_logs_and_events() {
+  local release="$1"
+
+#  sleep 5 # Prevent flodding the logs with the initial output
+  while true; do
+    local podFilters=(
+      --selector "app.kubernetes.io/instance=${release}"
+      --output jsonpath='{.items[*].metadata.name}'
+    )
+
+    for pod in $(
+      ${KUBECTL} get pods --namespace ${KUBE_NAMESPACE} "${podFilters[@]}"
+    ); do
+      kubectl_watch_pod_events "${pod}" &
+    done
+
+    for pod in $(
+      ${KUBECTL} get pods \
+        --namespace ${KUBE_NAMESPACE} \
+        "${podFilters[@]}"
+    ); do
+      for initContainer in $(
+        ${KUBECTL} get pods \
+          --namespace ${KUBE_NAMESPACE} \
+          --output jsonpath='{.status.initContainerStatuses}' ${pod} |  jq '.[] | select(.state.running) | .name'
+      ); do
+        kubectl_watch_pod_logs "${pod}" "${initContainer}"  &
+      done
+      for container in $(
+        ${KUBECTL} get pods \
+          --namespace ${KUBE_NAMESPACE} \
+          --output jsonpath='{.status.containerStatuses}' ${pod} |  jq '.[] | select(.state.running) | .name'
+      ); do
+        kubectl_watch_pod_logs "${pod}" "${container}"  &
+      done
+    done
+
+    sleep 1
+
+  done
+}
+
+function get_first_non_option() {
+  for arg in "$@"; do
+    if [[ "${arg}" != "-"* ]]; then
+      echo "${arg}"
+      return
+    fi
+  done
+}
+
+
+function helm_upgrade_watch_logs_events() {
+  local HELM_RELEASE_NAME="$(get_first_non_option "$@")"
+  local HELM_CMD=" upgrade --atomic --wait"
+  if [[ ${HELM_DEBUG:-false} == "true" ]]; then
+    HELM_CMD=${HELM_CMD}" --debug"
+  fi
+  if [[ ${HELM_DRY_RUN:-false} == "true" ]]; then
+    HELM_CMD=${HELM_CMD}" --dry-run"
+  fi
+
+  stdbuf -oL -eL ${HELM} ${HELM_CMD} --namespace ${KUBE_NAMESPACE} "$@" &
+  local pid="$!"
+  kubectl_watch_pods "${HELM_RELEASE_NAME}" &
+  kubectl_watch_pods_logs_and_events "${HELM_RELEASE_NAME}" &
+
+  wait "${pid}"
+
+  kubectl_cleanup
+}
