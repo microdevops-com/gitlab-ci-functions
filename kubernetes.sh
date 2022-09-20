@@ -39,7 +39,7 @@ else
   }
 fi
 
-. logger.sh
+. .gitlab-ci-functions/logger.sh
 
 function kubernetes_namespace_sanitize () {
 	if [ -z "$2" ]; then
