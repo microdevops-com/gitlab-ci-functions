@@ -316,16 +316,24 @@ function helm_unlock {
 	echo "NOTICE: Helm is parallel jobs safe now, you can safely remove helm_lock/helm_unlock calls"
 }
 
-watching_pods_containers_logs_file=$(mktemp /dev/shm/helm-upgrade-logs.watching-pods-containers-logs.XXXXXX)
-watching_pods_events_file=$(mktemp /dev/shm/helm-upgrade-logs.watching-pods-events.XXXXXX)
+watching_pods_containers_logs_file=false
+watching_pods_events_file=false
 
 function kubectl_cleanup() {
   echo "kubectl cleanup"
-  rm -fv "${watching_pods_containers_logs_file}" "${watching_pods_events_file}" || true
-  jobs -pr | xargs -r kill
-}
+  for PARENT in $(jobs -pr); do
+    for PARENT_PARENT in $(ps -o pid= --ppid $PARENT); do
+        for PARENT_PARENT_PARENT in $(ps -o pid= --ppid $PARENT_PARENT); do
+          ps -o pid= --ppid $PARENT_PARENT_PARENT | xargs -r kill -9  || true
+        done
+      ps -o pid= --ppid $PARENT_PARENT | xargs -r kill -9  || true
+    done
+    ps -o pid= --ppid $PARENT | xargs -r kill -9  || true
+  done
+  jobs -pr | xargs -r kill || true
+  rm -vf "${watching_pods_containers_logs_file}" "${watching_pods_events_file}" || true
 
-trap kubectl_cleanup EXIT
+}
 
 
 function kubectl_watch_pods() {
@@ -337,6 +345,7 @@ function kubectl_watch_pods() {
     --namespace ${KUBE_NAMESPACE} \
     --watch \
     --selector "app.kubernetes.io/instance=${release}"
+
 }
 
 function kubectl_watch_pod_logs() {
@@ -347,7 +356,7 @@ function kubectl_watch_pod_logs() {
     return
   fi
 
-  echo "${pod}-${container}" >>"${watching_pods_containers_logs_file}"
+  echo "${pod}-${container}" >> "${watching_pods_containers_logs_file}"
 
   log_command kubectl logs --namespace ${KUBE_NAMESPACE} --container ${container} --follow "${pod}"
   # pod ${pod} logs
@@ -355,7 +364,7 @@ function kubectl_watch_pod_logs() {
     --namespace ${KUBE_NAMESPACE} \
     --container ${container} \
     --follow \
-    "${pod}"  || true
+    "${pod}" || true
 
   # remove from watch list (it may be added again)
   sed -i "/^${pod}-${container}$/d" "${watching_pods_containers_logs_file}"
@@ -383,8 +392,8 @@ function kubectl_watch_pod_events() {
 function kubectl_watch_pods_logs_and_events() {
   local release="$1"
 
-#  sleep 5 # Prevent flodding the logs with the initial output
-  while true; do
+  sleep 5 # Prevent flodding the logs with the initial output
+  while [[ -f ${watching_pods_containers_logs_file} ]]; do
     local podFilters=(
       --selector "app.kubernetes.io/instance=${release}"
       --output jsonpath='{.items[*].metadata.name}'
@@ -433,6 +442,11 @@ function get_first_non_option() {
 
 
 function helm_upgrade_watch_logs_events() {
+  watching_pods_containers_logs_file=$(mktemp /dev/shm/helm-upgrade-logs.watching-pods-containers-logs.XXXXXX)
+  watching_pods_events_file=$(mktemp /dev/shm/helm-upgrade-logs.watching-pods-events.XXXXXX)
+  echo "Creating ${watching_pods_containers_logs_file}"
+  echo "Creating ${watching_pods_events_file}"
+
   local HELM_RELEASE_NAME="$(get_first_non_option "$@")"
   local HELM_CMD=" upgrade --atomic --wait"
   if [[ ${HELM_DEBUG:-false} == "true" ]]; then
