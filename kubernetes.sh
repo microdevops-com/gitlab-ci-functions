@@ -137,7 +137,6 @@ function namespace_secret_acme_cert () {
         fi
 
     elif [[ ${ACME_ACCOUNT} == "clouddns" ]]; then
-        local ACME_DIR="${HOME}/.acme"
         local ACME_EXIT_CODE
         docker run --rm  -t  \
           -v "${ACME_DIR}":/acme.sh \
