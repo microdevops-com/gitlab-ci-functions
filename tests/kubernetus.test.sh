@@ -14,11 +14,13 @@ test_namespace_secret_acme_cert_with_acme_mode_docker_and_acme_account_cloudflar
 
   local ACME_MODE=docker
   local ACME_ACCOUNT=cloudflare
-  local ACME_DOCKER_CLI_ARGS="--debug"
+  local ACME_CA_SERVER=zerossl
+  local ACME_DOCKER_CLI_ARGS="--debug --staging"
  namespace_secret_acme_cert ingress-cert ${TEST_ACME_CLOUDFLARE_DOMAIN}
 
   local ACME_MODE=docker
   local ACME_ACCOUNT=clouddns
+  local ACME_CA_SERVER=zerossl
   local ACME_DOCKER_CLI_ARGS="--debug"
  namespace_secret_acme_cert ingress-cert ${TEST_ACME_CLOUDNS_DOMAIN}
 

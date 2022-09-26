@@ -88,35 +88,56 @@ function namespace_secret_acme_cert () {
   echo "Domain: ${DNS_DOMAIN}"
 
   if [[ ${ACME_MODE:=legacy} == "docker" ]]; then
-    local ACME_DIR="${HOME}/.acme"
+    local ACME_DIR="${HOME}/.acme/${ACME_DOMAIN}-${ACME_CA_SERVER}-${ACME_ACCOUNT}"
+
+    if [[ ! -d "${ACME_DIR}/.cf-register-account"  ]] && [[ ${ACME_CA_SERVER} == "zerossl" ]]; then
+      docker run --rm -t \
+        -v "${ACME_DIR}":/acme.sh \
+        "${ACME_DOCKER_ENV_VARS[@]}" \
+        neilpang/acme.sh:${ACME_DOCKER_VERSION:=latest} \
+        --register-account -m "${ACME_ZEROSSL_EMAIL}"
+      docker run --rm -t -v "${ACME_DIR}":/acme.sh alpine mkdir -pv "/acme.sh/.cf-register-account"
+    fi
 
     if [[ ${ACME_ACCOUNT} == "cloudflare" ]]; then
+      local ACME_DOCKER_ENV_VARS
 
-      if [[ ! -d "${ACME_DIR}/.cf-register-account"  ]]; then
-        docker run --rm -t \
-          -v "${ACME_DIR}":/acme.sh \
-          -e CF_Email="${ACME_CLOUDFLARE_AUTH_EMAIL}" \
-          -e CF_Key="${ACME_CLOUDFLARE_AUTH_KEY}" \
-          neilpang/acme.sh:${ACME_DOCKER_VERSION:=latest} \
-          --register-account -m "${ACME_CLOUDFLARE_AUTH_EMAIL}"
-        docker run --rm -t -v "${ACME_DIR}":/acme.sh alpine mkdir -pv "/acme.sh/.cf-register-account"
+      if [[ ${ACME_CLOUDFLARE_AUTH_TYPE:=email} == "email" ]]; then
+        ACME_DOCKER_ENV_VARS=(
+          -e CF_Email="${ACME_CLOUDFLARE_AUTH_EMAIL}"
+          -e CF_Key="${ACME_CLOUDFLARE_AUTH_KEY}"
+        )
+      elif [[ ${ACME_CLOUDFLARE_AUTH_TYPE:=email} == "token" ]]; then
+        ACME_DOCKER_ENV_VARS=(
+          -e CF_Token="${ACME_CLOUDFLARE_AUTH_TOKEN}"
+          -e CF_Account_ID="${ACME_CLOUDFLARE_AUTH_ACCOUNT_ID}"
+        )
+      elif [[ ${ACME_CLOUDFLARE_AUTH_TYPE:=email} == "zone" ]]; then
+        ACME_DOCKER_ENV_VARS=(
+          -e CF_Token="${ACME_CLOUDFLARE_AUTH_TOKEN}"
+          -e CF_Account_ID="${ACME_CLOUDFLARE_AUTH_ACCOUNT_ID}"
+          -e CF_Zone_ID="${ACME_CLOUDFLARE_AUTH_ZONE_ID}"
+        )
+      else
+        echo "ACME_CLOUDFLARE_AUTH_TYPE not supported: ${ACME_CLOUDFLARE_AUTH_TYPE}. Only: email,token,zone"
+        exit 1
       fi
-        local ACME_EXIT_CODE
+        local ACME_EXIT_CODE=1
         docker run --rm  -t  \
           -v "${ACME_DIR}":/acme.sh \
-          -e CF_Email="${ACME_CLOUDFLARE_AUTH_EMAIL}" \
-          -e CF_Key="${ACME_CLOUDFLARE_AUTH_KEY}" \
+          "${ACME_DOCKER_ENV_VARS[@]}" \
           neilpang/acme.sh:${ACME_DOCKER_VERSION:=latest} \
           --issue --domain "${DNS_DOMAIN}" \
           ${ACME_DOCKER_CLI_ARGS:=} \
           --dns dns_cf || ACME_EXIT_CODE=$?
-        echo ACME exit code: $ACME_EXIT_CODE
+        echo ACME exit code: ${ACME_EXIT_CODE}
 
         if [[ ${ACME_EXIT_CODE} != 2 ]] && [[ ${ACME_EXIT_CODE} != 0 ]]; then
           exit $ACME_EXIT_CODE;
         fi
 
     elif [[ ${ACME_ACCOUNT} == "clouddns" ]]; then
+        local ACME_DIR="${HOME}/.acme"
         local ACME_EXIT_CODE
         docker run --rm  -t  \
           -v "${ACME_DIR}":/acme.sh \
@@ -134,6 +155,7 @@ function namespace_secret_acme_cert () {
 
     else
       echo "ACME_ACCOUNT not supported: ${ACME_ACCOUNT}"
+      exit 1
     fi
     docker run --rm  -t -v "${ACME_DIR}":/acme alpine /bin/sh -c "chown -R $(id -u):$(id -g) /acme"
     ${KUBECTL} -n ${KUBE_NAMESPACE} create secret tls ${SECRET_NAME} \
