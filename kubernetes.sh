@@ -88,15 +88,15 @@ function namespace_secret_acme_cert () {
   echo "Domain: ${DNS_DOMAIN}"
 
   if [[ ${ACME_MODE:=legacy} == "docker" ]]; then
-    local ACME_DIR="${HOME}/.acme/${ACME_DOMAIN}-${ACME_CA_SERVER}-${ACME_ACCOUNT}"
+    local ACME_DIR="${HOME}/.acme/${ACME_DOMAIN}-${ACME_ACCOUNT}-${ACME_CA_SERVER}"
 
-    if [[ ! -d "${ACME_DIR}/.cf-register-account"  ]] && [[ ${ACME_CA_SERVER} == "zerossl" ]]; then
+    if [[ ! -d "${ACME_DIR}/.zerossl-register-account"  ]] && [[ ${ACME_CA_SERVER} == "zerossl" ]]; then
       docker run --rm -t \
         -v "${ACME_DIR}":/acme.sh \
         "${ACME_DOCKER_ENV_VARS[@]}" \
         neilpang/acme.sh:${ACME_DOCKER_VERSION:=latest} \
         --register-account -m "${ACME_ZEROSSL_EMAIL}"
-      docker run --rm -t -v "${ACME_DIR}":/acme.sh alpine mkdir -pv "/acme.sh/.cf-register-account"
+      docker run --rm -t -v "${ACME_DIR}":/acme.sh alpine mkdir -pv "/acme.sh/.zerossl-register-account"
     fi
 
     if [[ ${ACME_ACCOUNT} == "cloudflare" ]]; then
@@ -122,7 +122,7 @@ function namespace_secret_acme_cert () {
         echo "ACME_CLOUDFLARE_AUTH_TYPE not supported: ${ACME_CLOUDFLARE_AUTH_TYPE}. Only: email,token,zone"
         exit 1
       fi
-        local ACME_EXIT_CODE=1
+        local ACME_EXIT_CODE=0
         docker run --rm  -t  \
           -v "${ACME_DIR}":/acme.sh \
           "${ACME_DOCKER_ENV_VARS[@]}" \
@@ -137,7 +137,7 @@ function namespace_secret_acme_cert () {
         fi
 
     elif [[ ${ACME_ACCOUNT} == "clouddns" ]]; then
-        local ACME_EXIT_CODE
+        local ACME_EXIT_CODE=0
         docker run --rm  -t  \
           -v "${ACME_DIR}":/acme.sh \
           -e CLOUDNS_AUTH_ID="${ACME_CLOUDNS_AUTH_ID}" \
