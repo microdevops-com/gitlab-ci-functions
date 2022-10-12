@@ -4,9 +4,10 @@ if [[ ${KUBE_MODE:=rancher} == "rancher" ]]; then
   . .gitlab-ci-functions/rancher.sh
 else
   KUBECTL="kubectl --v=${KUBECTL_VERBOSE_LEVEL:-0} --kubeconfig ${PWD}/.kube/config.yml"
-  KUBECTL_CMD_ARGS="--v=${KUBECTL_VERBOSE_LEVEL:-0} --kubeconfig ${PWD}/.kube/config.yml"
   HELM="helm --kubeconfig ${PWD}/.kube/config.yml"
-  HELM_CMD_ARGS="--kubeconfig ${PWD}/.kube/config.yml"
+
+  export KUBECTL_CMD_ARGS="--v=${KUBECTL_VERBOSE_LEVEL:-0} --kubeconfig ${PWD}/.kube/config.yml"
+  export HELM_CMD_ARGS="--kubeconfig ${PWD}/.kube/config.yml"
 
   function kube_cluster_login {	
     mkdir -p ${PWD}/.kube/
