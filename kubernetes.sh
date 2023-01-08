@@ -331,6 +331,9 @@ function kubectl_cp_container_of_first_running_pod () {
 	$KUBECTL cp -c $CONTAINER $KUBE_NAMESPACE/$POD:$DIR_FROM $DIR_TO
 }
 
+function kubectl_get_secret_hash () {
+  ${KUBECTL} -n ${KUBE_NAMESPACE} -o yaml get secret $1 | sha256sum | awk '{ print $1 }'
+}
 
 function helm_lock {
 	echo "NOTICE: Helm is parallel jobs safe now, you can safely remove helm_lock/helm_unlock calls"
