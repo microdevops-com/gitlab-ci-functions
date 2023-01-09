@@ -27,3 +27,15 @@ test_namespace_secret_acme_cert_with_acme_mode_docker_and_acme_account_cloudflar
 }
 
 test_namespace_secret_acme_cert_with_acme_mode_docker_and_acme_account_cloudflare
+
+
+test_kubectl_get_secret_hash () {
+  . ../kubernetes.sh
+
+  kube_cluster_login
+  export KUBE_NAMESPACE=default
+  kubectl_get_secret_hash example-secret
+
+}
+
+test_kubectl_get_secret_hash
