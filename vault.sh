@@ -2,7 +2,7 @@
 if ! command -v jq &> /dev/null
 then
     echo "jq could not be found. Please install for correct work"
-    exit
+    exit 1
 fi
 
 function vault_agent_cmd {
