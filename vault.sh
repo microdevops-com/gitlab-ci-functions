@@ -32,7 +32,7 @@ function vault_get_keys_by_secret_path {
 
 function vault_load_variables_by_secret_path {
   SECRET_PATH=$1
-  IS_EXPORT=${2:=false}
+  IS_EXPORT=${2:-false}
 
   local values=$(vault_agent_cmd "kv get -format json -field=data ${SECRET_PATH}")
   set -x
@@ -43,5 +43,5 @@ function vault_load_variables_by_secret_path {
       eval ${item}
     fi
     unset item
-done
+  done
 }
