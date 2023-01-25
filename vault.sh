@@ -35,7 +35,6 @@ function vault_load_variables_by_secret_path {
   IS_EXPORT=${2:-false}
 
   local values=$(vault_agent_cmd "kv get -format json -field=data ${SECRET_PATH}")
-  set -x
   for item in $(echo $values | jq -r "to_entries|map(\"\(.key)=\(.value|tostring)\")|.[]" ); do
     if [[ ${IS_EXPORT} == true ]]; then
       export ${item}
