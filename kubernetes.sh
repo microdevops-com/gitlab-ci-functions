@@ -335,6 +335,25 @@ function kubectl_get_secret_hash () {
   ${KUBECTL} -n ${KUBE_NAMESPACE} -o yaml get secret $1 | sha256sum | awk '{ print $1 }'
 }
 
+function kube_trim_ingress_domain {
+    IFS='.'; arrIN=($1); unset IFS;
+    string=${arrIN[0]}
+    trimmed=""
+
+    if [[ ${#string} -gt 63 ]]; then
+      while [[ ${#string} -gt 54 ]]; do
+        trimmed=${string: -1}${trimmed}
+        string=${string::-1}
+      done
+    fi
+    DOMAIN_HASH=`echo -n $trimmed | sha256sum | cut -c 1-8`
+
+    arrIN[0]=${string}${DOMAIN_HASH}
+
+    echo $(IFS="."; echo "${arrIN[*]}")
+}
+
+
 function helm_lock {
 	echo "NOTICE: Helm is parallel jobs safe now, you can safely remove helm_lock/helm_unlock calls"
 }
