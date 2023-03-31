@@ -1,6 +1,7 @@
 #!/bin/bash
 
 if [[ ${KUBE_MODE:=rancher} == "rancher" ]]; then
+  echo "WARNING: This method is DEPRECATED! and remove in feature. Please use KUBE_MODE=kube-api and new auth function kube_cluster_login"
   . .gitlab-ci-functions/rancher.sh
 else
   KUBECTL="kubectl --v=${KUBECTL_VERBOSE_LEVEL:-0} --kubeconfig ${PWD}/.kube/config.yml"
@@ -102,6 +103,14 @@ function namespace_secret_acme_cert () {
       docker run --rm -t -v "${ACME_DIR}":/acme.sh alpine mkdir -pv "/acme.sh/.zerossl-register-account"
     fi
 
+    if [ -z "${ACME_KEY_LENGTH+x}" ]; then
+      if [ -z "${ACME_DOCKER_CLI_ARGS+x}" ]; then
+        ACME_DOCKER_CLI_ARGS="${ACME_DOCKER_CLI_ARGS} --keylength ${ACME_KEY_LENGTH}"
+      else
+        ACME_DOCKER_CLI_ARGS=" --keylength ${ACME_KEY_LENGTH}"
+      fi
+    fi
+
     if [[ ${ACME_ACCOUNT} == "cloudflare" ]]; then
       local ACME_DOCKER_ENV_VARS
 
@@ -160,9 +169,14 @@ function namespace_secret_acme_cert () {
       exit 1
     fi
     docker run --rm  -t -v "${ACME_DIR}":/acme alpine /bin/sh -c "chown -R $(id -u):$(id -g) /acme"
+    if [[ ${ACME_KEY_LENGTH:=2048} =~ ^[0-9]+$ ]]; then
+        ACME_CERT_DIR=${ACME_DIR}/${DNS_DOMAIN}
+    else
+        ACME_CERT_DIR=${ACME_DIR}/${DNS_DOMAIN}_ecc
+    fi
     ${KUBECTL} -n ${KUBE_NAMESPACE} create secret tls ${SECRET_NAME} \
-    --key=${ACME_DIR}/${DNS_DOMAIN}/${DNS_DOMAIN}.key \
-    --cert=${ACME_DIR}/${DNS_DOMAIN}/fullchain.cer \
+    --key=${ACME_CERT_DIR}/${DNS_DOMAIN}.key \
+    --cert=${ACME_CERT_DIR}/fullchain.cer \
     -o yaml --dry-run=client | ${KUBECTL} -n ${KUBE_NAMESPACE} replace --force -f -
   else
     local DNS_SAFE_DOMAIN=$(echo "$2" | sed "s/*/./g")
