@@ -103,8 +103,8 @@ function namespace_secret_acme_cert () {
       docker run --rm -t -v "${ACME_DIR}":/acme.sh alpine mkdir -pv "/acme.sh/.zerossl-register-account"
     fi
 
-    if [[ -z "${ACME_KEY_LENGTH+x}" ]]; then
-      if [[ -z "${ACME_DOCKER_CLI_ARGS+x}" ]]; then
+    if [[ "${ACME_KEY_LENGTH:-}" ]]; then
+      if [[ "${ACME_DOCKER_CLI_ARGS:-}" ]]; then
         ACME_DOCKER_CLI_ARGS="${ACME_DOCKER_CLI_ARGS} --keylength ${ACME_KEY_LENGTH}"
       else
         ACME_DOCKER_CLI_ARGS=" --keylength ${ACME_KEY_LENGTH}"
