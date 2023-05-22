@@ -204,6 +204,22 @@ function namespace_secret_acme_cert () {
   fi
 }
 
+function namespace_secret_cert_manager_and_replicator_cert () {
+  local SECRET_NAME="$1"
+
+  ${KUBECTL} -n ${KUBE_INGRESS_REPLICATOR_FROM_NS} get secret ${KUBE_INGRESS_REPLICATOR_FROM_SECRET} -o json | jq .data > .kube/tls-data.json
+  cat .kube/tls-data.json | jq -r '."tls.crt"' | base64 -d > .kube/tls.crt
+  cat .kube/tls-data.json | jq -r '."tls.key"' | base64 -d > .kube/tls.key
+
+  ${KUBECTL} -n ${KUBE_NAMESPACE} create secret tls ${SECRET_NAME} \
+  --key=.kube/tls.key \
+  --cert=.kube/tls.crt \
+  -o yaml --dry-run=client | ${KUBECTL} -n ${KUBE_NAMESPACE} replace --force -f -
+
+  ${KUBECTL} -n ${KUBE_NAMESPACE} annotate secret ${SECRET_NAME} \
+  replicator.v1.mittwald.de/replicate-from="${KUBE_INGRESS_REPLICATOR_FROM_NS}/${KUBE_INGRESS_REPLICATOR_FROM_SECRET}"
+}
+
 function helm_init_namespace {
 	$HELM repo add stable https://charts.helm.sh/stable
 	$HELM repo add bitnami https://charts.bitnami.com/bitnami
