@@ -216,7 +216,7 @@ function namespace_secret_cert_manager_and_replicator_cert () {
   --cert=.kube/tls.crt \
   -o yaml --dry-run=client | ${KUBECTL} -n ${KUBE_NAMESPACE} replace --force -f -
 
-  ${KUBECTL} -n ${KUBE_NAMESPACE} annotate secret ${SECRET_NAME} \
+  ${KUBECTL} -n ${KUBE_NAMESPACE} annotate --overwrite secret ${SECRET_NAME} \
   replicator.v1.mittwald.de/replicate-from="${KUBE_INGRESS_REPLICATOR_FROM_NS}/${KUBE_INGRESS_REPLICATOR_FROM_SECRET}"
 }
 
