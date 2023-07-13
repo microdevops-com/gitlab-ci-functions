@@ -1,6 +1,6 @@
 #!/bin/bash
 
-function rabbitmq_check_api_availability() {
+function rabbitmq_wait_api_availability() {
   MAX_CHECKS=180
   SLEEP_TIME=1
   I=0
