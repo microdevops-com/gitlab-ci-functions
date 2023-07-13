@@ -1,5 +1,35 @@
 #!/bin/bash
 
+function rabbitmq_check_api_availability() {
+  MAX_CHECKS=180
+  SLEEP_TIME=1
+  I=0
+
+  set -eu
+  echo "Waiting for rabbitmq is running:"
+  while [[ $I -lt $MAX_CHECKS ]]; do
+    CMD_EXIT_CODE=0
+    rabbitmq_cmd "list vhosts" > /dev/null 2>&1 || CMD_EXIT_CODE=$?
+
+    if [[ ${CMD_EXIT_CODE} != 0 ]]; then
+      echo -n "."
+    else
+      echo ""
+      echo "RabbitMQ API running."
+      break;
+    fi
+
+      I=$((I + 1))
+      sleep ${SLEEP_TIME}
+  done
+
+  if [[ $I -eq $MAX_CHECKS ]]; then
+      echo ""
+      echo "ERROR: Waiting for rabbitmq API ready timeout."
+      exit 1
+  fi
+}
+
 function rabbitmq_create_vhost () {
   rabbitmq_cmd "-V / declare vhost name=$1"
   rabbitmq_cmd "-V / declare permission vhost=$1 user=root \"configure=.*\" \"write=.*\" \"read=.*\""
