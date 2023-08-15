@@ -1,10 +1,13 @@
 #!/bin/bash
 
 function check_var () {
-	if [ -z "${!1}" ]; then
-		echo "ERROR: var $1 is empty"
-		exit 1
-	fi
+	(
+		set +u
+		if [ -z "${!1}" ]; then
+			echo "ERROR: var $1 is empty"
+			exit 1
+		fi
+	)
 }
 
 # Salt 3001.1 minion on focal has bug in salt-call, should be fixed in magnesium
