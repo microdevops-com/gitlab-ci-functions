@@ -220,8 +220,15 @@ function namespace_secret_cert_manager_and_replicator_cert () {
   replicator.v1.mittwald.de/replicate-from="${KUBE_INGRESS_REPLICATOR_FROM_NS}/${KUBE_INGRESS_REPLICATOR_FROM_SECRET}"
 }
 
+function helm_init {
+  cp -rf ${HOME}/.cache/helm ${PWD}/.helm/cache
+  cp -rf ${HOME}/.config/helm ${PWD}/.helm/config
+
+  export HELM_CACHE_HOME=${PWD}/.helm/cache
+  export HELM_CONFIG_HOME=${PWD}/.helm/config
+}
+
 function helm_init_namespace {
-	$HELM repo add stable https://charts.helm.sh/stable
 	$HELM repo add bitnami https://charts.bitnami.com/bitnami
 	$HELM repo update
 }
