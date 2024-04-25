@@ -103,7 +103,7 @@ function gitlab_trigger_pipeline_and_wait_success() {
         # All other statuses or anything else - error
         echo ""
         echo "[gitlab-trigger-pipeline][$(date)][ERROR]: status($PIPELINE_STATUS) is unknown to wait any longer"
-        exit 1
+        return 1
     done
     echo ""
     echo "[gitlab-trigger-pipeline][$(date)][NOTICE] Successfully finished pipeline"
