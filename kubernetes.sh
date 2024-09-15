@@ -17,7 +17,7 @@ else
 
     if [[ ${KUBE_AUTH_TYPE} == "basic" ]]; then
       ${KUBECTL} config set-cluster remote-cluster --server=${KUBE_SERVER}
-      ${KUBECTL} config set-credentials ${KUBE_AUTH_USER} --password="${KUBE_AUTH_PASSWORD}".
+      ${KUBECTL} config set-credentials ${KUBE_AUTH_USER} --password="${KUBE_AUTH_PASSWORD}"
 
     elif [[ ${KUBE_AUTH_TYPE} == "cert" ]]; then
       echo ${KUBE_AUTH_CERTIFICATE_AUTHORITY} | base64 --decode > ${PWD}/.kube/certificate-authority.crt
@@ -36,6 +36,7 @@ else
     ${KUBECTL} config set-context ${KUBE_AUTH_USER}-context --cluster=remote-cluster --user=${KUBE_AUTH_USER}
     ${KUBECTL} config use-context ${KUBE_AUTH_USER}-context
 
+    ${KUBECTL} config view -o jsonpath='{"Cluster name\tServer\n"}{range .clusters[*]}{.name}{"\t"}{.cluster.server}{"\n"}{end}'
   }
 
   function kube_cluster_logout {
