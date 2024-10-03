@@ -71,7 +71,15 @@ function gitlab_trigger_pipeline_and_wait_success() {
             # Echo curl command
             echo "[gitlab-trigger-pipeline][$(date)][DEBUG] ${CURL_OUT}"
         fi
-        # Get status of pipeline
+
+         # Check error in response
+        local ERROR_MSG=$(echo ${CURL_OUT} | jq -r .message)        
+        if [[ "$ERROR_MSG" != "null" ]]; then
+          echo "[gitlab-trigger-pipeline][$(date)][ERROR] Can not get status of downstream pipeline: ${ERROR_MSG}"
+          return 1
+        fi
+
+        # Get the status of the pipeline
         local PIPELINE_STATUS_CURRENT=$(echo ${CURL_OUT} | jq -r .status)
         if [[ "$PIPELINE_STATUS" != "$PIPELINE_STATUS_CURRENT" ]]; then
             echo ""
