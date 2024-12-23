@@ -396,11 +396,35 @@ function kube_trim_ingress_domain {
     echo $(IFS="."; echo "${arrIN[*]}")
 }
 
+# --- ARGOCD ---
 
-function helm_lock {
-	echo "NOTICE: Helm is parallel jobs safe now, you can safely remove helm_lock/helm_unlock calls"
+ARGOCD="argocd --config ${PWD}/.argo/config.yml --loglevel ${ARGOCD_LOG_LEVEL:-info} --grpc-web"
+
+function argocd_login {
+    mkdir -p ${PWD}/.argo/
+    touch ${PWD}/.argo/config.yml
+    chmod 0600 ${PWD}/.argo/config.yml
+
+    cat <<EOF > ${PWD}/.argo/config.yml
+contexts:
+  - name: argocd
+    server: ${ARGOCD_SERVER}
+    user: ci-cd-token
+current-context: argocd
+servers:
+  - grpc-web-root-path: ""
+    insecure: true
+    server: ${ARGOCD_SERVER}
+users:
+  - auth-token: ${ARGOCD_AUTH_TOKEN}
+    name: ci-cd-token
+EOF
+    echo "ARGOCD_SERVER - ${ARGOCD_SERVER}"
+    ${ARGOCD} version --short
 }
 
-function helm_unlock {
-	echo "NOTICE: Helm is parallel jobs safe now, you can safely remove helm_lock/helm_unlock calls"
+function argocd_app_wait {
+    local ARGO_APP_NAME="$1"
+    ${ARGOCD} app wait ${ARGO_APP_NAME} --app-namespace=${KUBE_NAMESPACE}
 }
+
