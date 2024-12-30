@@ -6,11 +6,12 @@ if [[ ${KUBE_MODE:=rancher} == "rancher" ]]; then
 else
   KUBECTL="kubectl --v=${KUBECTL_VERBOSE_LEVEL:-0} --kubeconfig ${PWD}/.kube/config.yml"
   HELM="helm --kubeconfig ${PWD}/.kube/config.yml"
+  AWS_EKS="aws eks"
 
   export KUBECTL_CMD_ARGS="--v=${KUBECTL_VERBOSE_LEVEL:-0} --kubeconfig ${PWD}/.kube/config.yml"
   export HELM_CMD_ARGS="--kubeconfig ${PWD}/.kube/config.yml"
 
-  function kube_cluster_login {	
+  function kube_cluster_login {
     mkdir -p ${PWD}/.kube/
     touch ${PWD}/.kube/config.yml
     chmod 0600 ${PWD}/.kube/config.yml
@@ -18,6 +19,9 @@ else
     if [[ ${KUBE_AUTH_TYPE} == "basic" ]]; then
       ${KUBECTL} config set-cluster remote-cluster --server=${KUBE_SERVER}
       ${KUBECTL} config set-credentials ${KUBE_AUTH_USER} --password="${KUBE_AUTH_PASSWORD}"
+
+      ${KUBECTL} config set-context ${KUBE_AUTH_USER}-context --cluster=remote-cluster --user=${KUBE_AUTH_USER}
+      ${KUBECTL} config use-context ${KUBE_AUTH_USER}-context
 
     elif [[ ${KUBE_AUTH_TYPE} == "cert" ]]; then
       echo ${KUBE_AUTH_CERTIFICATE_AUTHORITY} | base64 --decode > ${PWD}/.kube/certificate-authority.crt
@@ -27,14 +31,19 @@ else
       ${KUBECTL} config set-cluster remote-cluster --server=${KUBE_SERVER} --certificate-authority=${PWD}/.kube/certificate-authority.crt
       ${KUBECTL} config set-credentials ${KUBE_AUTH_USER} --client-certificate=${PWD}/.kube/client-certificate.crt --client-key=${PWD}/.kube/client-key.crt
 
+      ${KUBECTL} config set-context ${KUBE_AUTH_USER}-context --cluster=remote-cluster --user=${KUBE_AUTH_USER}
+      ${KUBECTL} config use-context ${KUBE_AUTH_USER}-context
+
     elif [[ ${KUBE_AUTH_TYPE} == "token" ]]; then
       ${KUBECTL} config set-cluster remote-cluster --server=${KUBE_SERVER}
       ${KUBECTL} config set-credentials ${KUBE_AUTH_USER} --token="${KUBE_AUTH_TOKEN}"
 
-    fi
+      ${KUBECTL} config set-context ${KUBE_AUTH_USER}-context --cluster=remote-cluster --user=${KUBE_AUTH_USER}
+      ${KUBECTL} config use-context ${KUBE_AUTH_USER}-context
 
-    ${KUBECTL} config set-context ${KUBE_AUTH_USER}-context --cluster=remote-cluster --user=${KUBE_AUTH_USER}
-    ${KUBECTL} config use-context ${KUBE_AUTH_USER}-context
+    elif [[ ${KUBE_AUTH_TYPE} == "aws" ]]; then
+      KUBECONFIG=${PWD}/.kube/config.yml ${AWS_EKS} update-kubeconfig --name ${AWS_EKS_CLUSTER_NAME} --region ${AWS_EKS_CLUSTER_REGION}
+    fi
 
     ${KUBECTL} config view -o jsonpath='{"Cluster name\tServer\n"}{range .clusters[*]}{.name}{"\t"}{.cluster.server}{"\n"}{end}'
   }
