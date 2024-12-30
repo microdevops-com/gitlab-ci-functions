@@ -6,7 +6,6 @@ if [[ ${KUBE_MODE:=rancher} == "rancher" ]]; then
 else
   KUBECTL="kubectl --v=${KUBECTL_VERBOSE_LEVEL:-0} --kubeconfig ${PWD}/.kube/config.yml"
   HELM="helm --kubeconfig ${PWD}/.kube/config.yml"
-  AWS_EKS="aws eks"
 
   export KUBECTL_CMD_ARGS="--v=${KUBECTL_VERBOSE_LEVEL:-0} --kubeconfig ${PWD}/.kube/config.yml"
   export HELM_CMD_ARGS="--kubeconfig ${PWD}/.kube/config.yml"
@@ -42,7 +41,7 @@ else
       ${KUBECTL} config use-context ${KUBE_AUTH_USER}-context
 
     elif [[ ${KUBE_AUTH_TYPE} == "aws" ]]; then
-      KUBECONFIG=${PWD}/.kube/config.yml ${AWS_EKS} update-kubeconfig --name ${AWS_EKS_CLUSTER_NAME} --region ${AWS_EKS_CLUSTER_REGION}
+      KUBECONFIG=${PWD}/.kube/config.yml aws eks update-kubeconfig --name ${AWS_EKS_CLUSTER_NAME} --region ${AWS_EKS_CLUSTER_REGION}
     fi
 
     ${KUBECTL} config view -o jsonpath='{"Cluster name\tServer\n"}{range .clusters[*]}{.name}{"\t"}{.cluster.server}{"\n"}{end}'
