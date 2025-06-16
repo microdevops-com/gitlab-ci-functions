@@ -1,21 +1,32 @@
 #!/bin/bash
+mkdir -p ${PWD}/.kube/
 
-if [[ ${KUBE_MODE:=rancher} == "rancher" ]]; then
-  echo "WARNING: This method is DEPRECATED! and remove in feature. Please use KUBE_MODE=kube-api and new auth function kube_cluster_login"
-  . .gitlab-ci-functions/rancher.sh
-else
-  KUBECTL="kubectl --v=${KUBECTL_VERBOSE_LEVEL:-0} --kubeconfig ${PWD}/.kube/config.yml"
-  HELM="helm --kubeconfig ${PWD}/.kube/config.yml"
+#For external binary program
+export KUBECTL_CMD_ARGS="--v=${KUBECTL_VERBOSE_LEVEL:-0}"
+export HELM_CMD_ARGS=""
 
-  export KUBECTL_CMD_ARGS="--v=${KUBECTL_VERBOSE_LEVEL:-0} --kubeconfig ${PWD}/.kube/config.yml"
-  export HELM_CMD_ARGS="--kubeconfig ${PWD}/.kube/config.yml"
+KUBECTL_BIN_PATH="kubectl"
+HELM_BIN_PATH="helm"
 
-  function kube_cluster_login {
-    mkdir -p ${PWD}/.kube/
+KUBECTL="${KUBECTL_BIN_PATH} ${KUBECTL_CMD_ARGS}"
+HELM="${HELM_BIN_PATH} ${HELM_CMD_ARGS}"
+
+function kube_cluster_login {
+  if [[ ${KUBE_MODE} == "kube-api" ]]; then
+
     touch ${PWD}/.kube/config.yml
     chmod 0600 ${PWD}/.kube/config.yml
 
+    local LOGIN_CMD_ARG="--kubeconfig ${PWD}/.kube/config.yml"
+
+    KUBECTL_CMD_ARGS+=" ${LOGIN_CMD_ARG} "
+    HELM_CMD_ARGS+=" ${LOGIN_CMD_ARG} "
+
+    KUBECTL="${KUBECTL_BIN_PATH} ${KUBECTL_CMD_ARGS}"
+    HELM="${HELM_BIN_PATH} ${HELM_CMD_ARGS}"
+
     if [[ ${KUBE_AUTH_TYPE} == "basic" ]]; then
+
       ${KUBECTL} config set-cluster remote-cluster --server=${KUBE_SERVER}
       ${KUBECTL} config set-credentials ${KUBE_AUTH_USER} --password="${KUBE_AUTH_PASSWORD}"
 
@@ -23,6 +34,7 @@ else
       ${KUBECTL} config use-context ${KUBE_AUTH_USER}-context
 
     elif [[ ${KUBE_AUTH_TYPE} == "cert" ]]; then
+
       echo ${KUBE_AUTH_CERTIFICATE_AUTHORITY} | base64 --decode > ${PWD}/.kube/certificate-authority.crt
       echo ${KUBE_AUTH_CLIENT_CERTIFICATE} | base64 --decode > ${PWD}/.kube/client-certificate.crt
       echo ${KUBE_AUTH_CLIENT_KEY} | base64 --decode > ${PWD}/.kube/client-key.crt
@@ -34,6 +46,7 @@ else
       ${KUBECTL} config use-context ${KUBE_AUTH_USER}-context
 
     elif [[ ${KUBE_AUTH_TYPE} == "token" ]]; then
+
       ${KUBECTL} config set-cluster remote-cluster --server=${KUBE_SERVER}
       ${KUBECTL} config set-credentials ${KUBE_AUTH_USER} --token="${KUBE_AUTH_TOKEN}"
 
@@ -45,14 +58,16 @@ else
     fi
 
     ${KUBECTL} config view -o jsonpath='{"Cluster name\tServer\n"}{range .clusters[*]}{.name}{"\t"}{.cluster.server}{"\n"}{end}'
-  }
 
-  function kube_cluster_logout {
-    rm -rvf ${PWD}/.kube/*
-  }
-fi
+  elif [[ ${KUBE_MODE} == "kube-pod" ]]; then
+   echo "[kube_cluster_login] use kube service account for communicate"
+  fi
+}
 
-. .gitlab-ci-functions/logger.sh
+function kube_cluster_logout {
+  rm -rvf ${PWD}/.kube/*
+}
+
 
 function kubernetes_namespace_sanitize () {
 	if [ -z "$2" ]; then
@@ -435,4 +450,3 @@ function argocd_app_wait {
     local ARGO_APP_NAME="$1"
     ${ARGOCD} app wait ${ARGO_APP_NAME} --app-namespace=${KUBE_NAMESPACE}
 }
-
