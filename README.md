@@ -11,13 +11,13 @@ Kubectl, rancher cli, helm calls are parallel job safe.
 ## Add this repo as Git Submodule to a project
 
 ```
-git submodule add --name .gitlab-ci-functions -b master -- https://github.com/sysadmws/gitlab-ci-functions .gitlab-ci-functions
+git submodule add --name .gitlab-ci-functions -b master -- https://github.com/microdevops-com/gitlab-ci-functions.git .gitlab-ci-functions
 ```
 
 P.S. You can directly fetch code from https://raw.githubusercontent.com each time pipeline runs, it is a quick way to start, but not a smart way to use permanently.
 ```
 before_script:
-  - rm -f kubernetes.sh && curl -L -s -o kubernetes.sh https://raw.githubusercontent.com/sysadmws/gitlab-ci-functions/master/kubernetes.sh && . ./kubernetes.sh
+  - rm -f kubernetes.sh && curl -L -s -o kubernetes.sh https://raw.githubusercontent.com/microdevops-com/gitlab-ci-functions/master/kubernetes.sh && . ./kubernetes.sh
   - ...
 
 ...
