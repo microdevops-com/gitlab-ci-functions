@@ -101,3 +101,29 @@ KUBE_SERVER=https://rancher.example.com/k8s/clusters/local
 KUBE_TOKEN=kubeconfig-u-xxxxx:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ADMIN_EMAIL=admin@example.com
 ```
+
+## Docker app deploy via Salt (`misc.sh`)
+For hosts managed by the `app.docker` state of microdevops-formula. All functions ssh as `root`
+to the target; port comes from `DOCKER_SERVER_SSH_PORT` (`NGINX_SERVER_SSH_PORT` for `ssh_copy_from_docker`).
+
+| Function | Purpose |
+|---|---|
+| `ssh_salt_call_app_docker SERVER IMAGE APP [EXEC]` | `salt-call state.apply app.docker` for one app with a new image. Env: `DEPLOY_PRE_START=true` also runs the app's `pre_start` with the same image; `SALT_CALL_EXTRA_ARGS` (e.g. `--retcode-passthrough --state-output=mixed`) |
+| `ssh_copy_from_docker SERVER IMAGE SOURCE TARGET STRIP [EXCLUDES]` | Copy a path from the image to the host (e.g. `public/` for a host nginx) |
+| `ssh_install_file SERVER SOURCE TARGET [OWNER] [MODE]` | Upload a file (e.g. a GitLab File variable) only if changed; prints `changed`/`unchanged` |
+| `ssh_docker_container_id SERVER CONTAINER` | Container ID, empty if missing |
+| `ssh_docker_restart SERVER CONTAINER [STOP_TIMEOUT]` | Restart a container |
+| `ssh_docker_wait_healthy SERVER CONTAINER [TIMEOUT]` | Wait for the image healthcheck; fail with log tail on timeout |
+
+```
+deploy_dev:
+  script:
+    - . .gitlab-ci-functions/misc.sh
+    - ssh_copy_from_docker "$DEPLOY_SERVER" "$IMAGE" app/public "/var/www/$DEPLOY_APP/public" 2
+    - ENV_STATE=$(ssh_install_file "$DEPLOY_SERVER" "$APP_ENV_FILE" "/var/www/$DEPLOY_APP/.env.local" 1000:1000 0400)
+    - OLD_ID=$(ssh_docker_container_id "$DEPLOY_SERVER" "app-$DEPLOY_APP")
+    - DEPLOY_PRE_START=true SALT_CALL_EXTRA_ARGS=--retcode-passthrough ssh_salt_call_app_docker "$DEPLOY_SERVER" "$IMAGE" "$DEPLOY_APP"
+    # salt does not recreate the container when only the env file changed
+    - if [ "$ENV_STATE" = changed ] && [ "$OLD_ID" = "$(ssh_docker_container_id "$DEPLOY_SERVER" "app-$DEPLOY_APP")" ]; then ssh_docker_restart "$DEPLOY_SERVER" "app-$DEPLOY_APP" 60; fi
+    - ssh_docker_wait_healthy "$DEPLOY_SERVER" "app-$DEPLOY_APP"
+```
