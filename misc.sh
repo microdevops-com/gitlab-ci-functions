@@ -57,12 +57,14 @@ function ssh_copy_from_docker () {
 	printf '%s' "${CI_JOB_TOKEN}" | ssh -o Port=${SSH_PORT} -o BatchMode=yes -o StrictHostKeyChecking=no root@${DEPLOY_SERVER} 'docker login -u "'${CI_REGISTRY_USER}'" --password-stdin "'${CI_REGISTRY}'"'
 	ssh -o Port=${SSH_PORT} -o BatchMode=yes -o StrictHostKeyChecking=no root@${DEPLOY_SERVER} 'docker pull '${DEPLOY_IMAGE}''
 
-	if [ -z "$DEPLOY_EXCLUDE" ]; then
-		ssh -o Port=${SSH_PORT} -o BatchMode=yes -o StrictHostKeyChecking=no root@${DEPLOY_SERVER} 'DOCKER_TMP_DIR=$(mktemp -d -t docker.XXXXXXXXXX); DEPLOY_TMP_CONTAINER=$(docker create '${DEPLOY_IMAGE}'); docker export ${DEPLOY_TMP_CONTAINER} | tar -C ${DOCKER_TMP_DIR} --strip-components='${DEPLOY_STRIP}' -xf - '${DEPLOY_SOURCE}'; rsync -a --delete ${DOCKER_TMP_DIR}/ '${DEPLOY_TARGET}'/; chmod 755 '${DEPLOY_TARGET}'; docker rm ${DEPLOY_TMP_CONTAINER}; rm -rf ${DOCKER_TMP_DIR}'
-	else
-		printf -v DEPLOY_EXCLUDE '\x2D\x2Dexclude %s ' ${DEPLOY_EXCLUDE[@]}
-		ssh -o Port=${SSH_PORT} -o BatchMode=yes -o StrictHostKeyChecking=no root@${DEPLOY_SERVER} 'DOCKER_TMP_DIR=$(mktemp -d -t docker.XXXXXXXXXX); DEPLOY_TMP_CONTAINER=$(docker create '${DEPLOY_IMAGE}'); docker export ${DEPLOY_TMP_CONTAINER} | tar -C ${DOCKER_TMP_DIR} --strip-components='${DEPLOY_STRIP}' -xf - '${DEPLOY_SOURCE}'; rsync -a --delete '${DEPLOY_EXCLUDE}' ${DOCKER_TMP_DIR}/ '${DEPLOY_TARGET}'/; chmod 755 '${DEPLOY_TARGET}'; docker rm ${DEPLOY_TMP_CONTAINER}; rm -rf ${DOCKER_TMP_DIR}'
+	local RSYNC_EXCLUDE=""
+	if [ -n "$DEPLOY_EXCLUDE" ]; then
+		printf -v RSYNC_EXCLUDE '\x2D\x2Dexclude %s ' ${DEPLOY_EXCLUDE[@]}
 	fi
+
+	# set -e: a failed create/extract/rsync fails the job; the EXIT trap always removes temp container and dir.
+	# TARGET is created if missing.
+	ssh -o Port=${SSH_PORT} -o BatchMode=yes -o StrictHostKeyChecking=no root@${DEPLOY_SERVER} 'set -e; DEPLOY_TMP_CONTAINER=; DOCKER_TMP_DIR=$(mktemp -d -t docker.XXXXXXXXXX); trap "rm -rf \"\$DOCKER_TMP_DIR\"; [ -z \"\$DEPLOY_TMP_CONTAINER\" ] || docker rm \"\$DEPLOY_TMP_CONTAINER\" > /dev/null" EXIT; DEPLOY_TMP_CONTAINER=$(docker create '${DEPLOY_IMAGE}'); docker export ${DEPLOY_TMP_CONTAINER} | tar -C ${DOCKER_TMP_DIR} --strip-components='${DEPLOY_STRIP}' -xf - '${DEPLOY_SOURCE}'; mkdir -p '${DEPLOY_TARGET}'; rsync -a --delete '${RSYNC_EXCLUDE}' ${DOCKER_TMP_DIR}/ '${DEPLOY_TARGET}'/; chmod 755 '${DEPLOY_TARGET}''
 }
 
 # Upload a local file to SERVER only if its content differs (e.g. app env file from a GitLab File variable).
