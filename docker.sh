@@ -5,7 +5,7 @@
 export DOCKER_CONFIG=$PWD/.docker
 
 function registry_login {
-	docker login -u "$CI_REGISTRY_USER" -p "$CI_JOB_TOKEN" "$CI_REGISTRY"
+	printf '%s' "$CI_JOB_TOKEN" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
 }
 
 function registry_param_login {
